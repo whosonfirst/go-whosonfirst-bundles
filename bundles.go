@@ -1,13 +1,14 @@
 package bundles
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
-	"github.com/whosonfirst/go-whosonfirst-bundles/compress"
 	"github.com/whosonfirst/go-whosonfirst-clone"
 	"github.com/whosonfirst/go-whosonfirst-log"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -28,62 +29,6 @@ type BundleOptions struct {
 
 type Bundle struct {
 	Options *BundleOptions
-}
-
-type BundleInfo struct {
-	os.FileInfo
-	path string
-	info os.FileInfo
-}
-
-func (i *BundleInfo) Name() string {
-	return i.info.Name()
-}
-
-func (i *BundleInfo) Size() int64 {
-	return i.info.Size()
-}
-
-func (i *BundleInfo) Mode() os.FileMode {
-	return i.info.Mode()
-}
-
-func (i *BundleInfo) ModTime() time.Time {
-	return i.info.ModTime()
-}
-
-func (i *BundleInfo) IsDir() bool {
-	return i.info.IsDir()
-}
-
-func (i *BundleInfo) Sys() interface{} {
-	return nil
-}
-
-func (i *BundleInfo) Path() string {
-	return i.path
-}
-
-func NewBundleInfo(path string) (os.FileInfo, error) {
-
-	abs_path, err := filepath.Abs(path)
-
-	if err != nil {
-		return nil, err
-	}
-
-	info, err := os.Stat(abs_path)
-
-	if err != nil {
-		return nil, err
-	}
-
-	i := BundleInfo{
-		path: abs_path,
-		info: info,
-	}
-
-	return &i, nil
 }
 
 func DefaultBundleOptions() *BundleOptions {
@@ -235,7 +180,7 @@ func (b *Bundle) BundleMetafile(metafile string) (string, error) {
 
 	if opts.Compress {
 
-		bundle_compressed, err := compress.CompressBundle(bundle_root)
+		bundle_compressed, err := b.CompressBundle(bundle_root)
 
 		if err != nil {
 			return "", err
@@ -251,4 +196,36 @@ func (b *Bundle) BundleMetafile(metafile string) (string, error) {
 	}
 
 	return bundle_root, nil
+}
+
+func (b *Bundle) CompressBundle(path string) (string, error) {
+
+	cpath := fmt.Sprintf("%s.tar.bz2", path)
+
+	tar := "tar"
+
+	// FIX ME: needs the -C flag I think... check py-mz-wof code
+
+	args := []string{
+		"-cjf", // -c is for create; -j is for bzip; -f if for file
+		cpath,
+		path,
+	}
+
+	cmd := exec.Command(tar, args...)
+
+	// to do : wire the b.Options.Logger in to this...
+
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	err := cmd.Run()
+
+	// fmt.Println(tar, args, out.String())
+
+	if err != nil {
+		return "", err
+	}
+
+	return cpath, nil
 }
