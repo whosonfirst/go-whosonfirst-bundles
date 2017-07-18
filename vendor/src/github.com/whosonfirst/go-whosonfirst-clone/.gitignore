@@ -1,0 +1,5 @@
+*~
+pkg
+clone
+src
+!vendor/src
