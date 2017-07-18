@@ -5,16 +5,29 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 )
 
 func CompressBundle(source string, chroot string, opts *CompressOptions) (string, error) {
 
-	dest := fmt.Sprintf("%s.tar.bz", source)
+	abs_source, err := filepath.Abs(source)
+
+	if err != nil {
+		return "", err
+	}
+
+	abs_chroot, err := filepath.Abs(chroot)
+
+	if err != nil {
+		return "", err
+	}
+
+	dest := fmt.Sprintf("%s.tar.bz2", abs_source)
 
 	tar := "tar"
 
 	args := []string{
-		"-C", chroot, // -C is for ...
+		"-C", abs_chroot, // -C is for chroot
 		"-cjf", // -c is for create; -j is for bzip; -f if for file
 		dest,
 		source,
@@ -27,7 +40,7 @@ func CompressBundle(source string, chroot string, opts *CompressOptions) (string
 	var out bytes.Buffer
 	cmd.Stdout = &out
 
-	err := cmd.Run()
+	err = cmd.Run()
 
 	if err != nil {
 		return "", err

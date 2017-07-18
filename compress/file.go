@@ -17,10 +17,16 @@ func CompressFile(source string, chroot string, opts *CompressOptions) (string, 
 		return "", err
 	}
 
+	abs_chroot, err := filepath.Abs(chroot)
+
+	if err != nil {
+		return "", err
+	}
+
 	fname := filepath.Base(abs_source)
 	fname = fmt.Sprintf("%s.bz2", fname)
 
-	dest := filepath.Join(chroot, fname)
+	dest := filepath.Join(abs_chroot, fname)
 
 	tar := "bzip2"
 
