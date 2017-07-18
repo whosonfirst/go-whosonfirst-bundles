@@ -12,6 +12,8 @@ func main() {
 	var source = flag.String("source", "https://s3.amazonaws.com/whosonfirst.mapzen.com/data/", "Where to look for files")
 	var dest = flag.String("dest", "", "Where to write files")
 
+	var name = flag.String("name", "", "...")
+
 	var compress = flag.Bool("compress", false, "...")
 	var dated = flag.Bool("dated", false, "...")
 
@@ -29,6 +31,7 @@ func main() {
 
 	opts.Source = *source
 	opts.Destination = *dest
+	opts.BundleName = *name
 	opts.Compress = *compress
 	opts.Dated = *dated
 	opts.SkipExisting = *skip_existing
