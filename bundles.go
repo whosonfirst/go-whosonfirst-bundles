@@ -3,6 +3,7 @@ package bundles
 import (
 	"errors"
 	"fmt"
+	"github.com/whosonfirst/go-whosonfirst-bundles/compress"
 	"github.com/whosonfirst/go-whosonfirst-clone"
 	"github.com/whosonfirst/go-whosonfirst-log"
 	"io"
@@ -27,6 +28,62 @@ type BundleOptions struct {
 
 type Bundle struct {
 	Options *BundleOptions
+}
+
+type BundleInfo struct {
+	os.FileInfo
+	path string
+	info os.FileInfo
+}
+
+func (i *BundleInfo) Name() string {
+	return i.info.Name()
+}
+
+func (i *BundleInfo) Size() int64 {
+	return i.info.Size()
+}
+
+func (i *BundleInfo) Mode() os.FileMode {
+	return i.info.Mode()
+}
+
+func (i *BundleInfo) ModTime() time.Time {
+	return i.info.ModTime()
+}
+
+func (i *BundleInfo) IsDir() bool {
+	return i.info.IsDir()
+}
+
+func (i *BundleInfo) Sys() interface{} {
+	return nil
+}
+
+func (i *BundleInfo) Path() string {
+	return i.path
+}
+
+func NewBundleInfo(path string) (os.FileInfo, error) {
+
+	abs_path, err := filepath.Abs(path)
+
+	if err != nil {
+		return nil, err
+	}
+
+	info, err := os.Stat(abs_path)
+
+	if err != nil {
+		return nil, err
+	}
+
+	i := BundleInfo{
+		path: abs_path,
+		info: info,
+	}
+
+	return &i, nil
 }
 
 func DefaultBundleOptions() *BundleOptions {
@@ -98,14 +155,14 @@ func (b *Bundle) BundleRoot(metafile string) (string, error) {
 	return filepath.Abs(bundle_root)
 }
 
-func (b *Bundle) BundleMetafile(metafile string) error {
+func (b *Bundle) BundleMetafile(metafile string) (string, error) {
 
 	opts := b.Options
 
 	bundle_root, err := b.BundleRoot(metafile)
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	info, err := os.Stat(bundle_root)
@@ -113,7 +170,7 @@ func (b *Bundle) BundleMetafile(metafile string) error {
 	if !os.IsNotExist(err) {
 
 		if info.IsDir() {
-			return errors.New("Bundle already exists, please move it before proceeding")
+			return "", errors.New("Bundle already exists, please move it before proceeding")
 		}
 	}
 
@@ -123,13 +180,13 @@ func (b *Bundle) BundleMetafile(metafile string) error {
 	cl, err := clone.NewWOFClone(opts.Source, bundle_data, opts.Processes, opts.Logger)
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	err = cl.CloneMetaFile(metafile, opts.SkipExisting, opts.ForceUpdates)
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// copy the metafile in to the bundle
@@ -140,7 +197,7 @@ func (b *Bundle) BundleMetafile(metafile string) error {
 	infile, err := os.Open(metafile)
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	defer infile.Close()
@@ -148,7 +205,7 @@ func (b *Bundle) BundleMetafile(metafile string) error {
 	outfile, err := os.Create(dest_meta)
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	defer outfile.Close()
@@ -156,7 +213,7 @@ func (b *Bundle) BundleMetafile(metafile string) error {
 	_, err = io.Copy(outfile, infile)
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Add a README
@@ -166,7 +223,7 @@ func (b *Bundle) BundleMetafile(metafile string) error {
 	fh, err := os.Create(readme)
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	ts := time.Now()
@@ -176,7 +233,14 @@ func (b *Bundle) BundleMetafile(metafile string) error {
 
 	fh.Close()
 
-	// compress the bundle
+	if opts.Compress {
 
-	return nil
+		bundle_root, err = compress.CompressBundle(bundle_root)
+
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return bundle_root, nil
 }

@@ -45,12 +45,13 @@ func main() {
 
 	for _, metafile := range args {
 
-		err = b.BundleMetafile(metafile)
+		path, err := b.BundleMetafile(metafile)
 
 		if err != nil {
 			log.Fatal(err)
 		}
 
+		log.Println(path)
 	}
 
 	os.Exit(0)
