@@ -4,4 +4,6 @@ src
 bin/wof-*
 !vendor/src
 *.tar
+*.csv
+*.sha1.txt
 *.bz2

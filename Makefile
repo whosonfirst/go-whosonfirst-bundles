@@ -12,7 +12,11 @@ build:	rmdeps deps fmt bin
 self:   prep
 	if test -d src; then rm -rf src; fi
 	mkdir -p src/github.com/whosonfirst/go-whosonfirst-bundles/
+	mkdir -p src/github.com/whosonfirst/go-whosonfirst-bundles/compress
+	mkdir -p src/github.com/whosonfirst/go-whosonfirst-bundles/hash
 	cp *.go src/github.com/whosonfirst/go-whosonfirst-bundles/
+	cp hash/*.go src/github.com/whosonfirst/go-whosonfirst-bundles/hash/
+	cp compress/*.go src/github.com/whosonfirst/go-whosonfirst-bundles/compress/
 	cp -r vendor/src/* src/
 
 deps:   rmdeps
@@ -28,7 +32,9 @@ vendor-deps: deps
 
 fmt:
 	go fmt *.go
+	go fmt compress/*.go
 	go fmt cmd/*.go
+	go fmt hash/*.go
 
 bin:	self
 	@GOPATH=$(GOPATH) go build -o bin/wof-bundle-metafiles cmd/wof-bundle-metafiles.go

@@ -178,37 +178,21 @@ func (b *Bundle) BundleMetafile(metafile string) (string, error) {
 
 	fh.Close()
 
-	if opts.Compress {
-
-		bundle_compressed, err := b.CompressBundle(bundle_root)
-
-		if err != nil {
-			return "", err
-		}
-
-		err = os.RemoveAll(bundle_root)
-
-		if err != nil {
-			return "", err
-		}
-
-		bundle_root = bundle_compressed
-	}
-
 	return bundle_root, nil
 }
 
 func (b *Bundle) CompressBundle(path string) (string, error) {
 
-	cpath := fmt.Sprintf("%s.tar.bz2", path)
+	opts := b.Options
+
+	tarball_path := fmt.Sprintf("%s.tar.bz2", path)
 
 	tar := "tar"
 
-	// FIX ME: needs the -C flag I think... check py-mz-wof code
-
 	args := []string{
+		"-C", opts.Destination, // -C is for ...
 		"-cjf", // -c is for create; -j is for bzip; -f if for file
-		cpath,
+		tarball_path,
 		path,
 	}
 
@@ -227,5 +211,5 @@ func (b *Bundle) CompressBundle(path string) (string, error) {
 		return "", err
 	}
 
-	return cpath, nil
+	return tarball_path, nil
 }
