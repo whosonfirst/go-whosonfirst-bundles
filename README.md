@@ -18,6 +18,17 @@ All of this package's dependencies are bundled with the code in the `vendor` dir
 
 This is work in progress. It may change (and break your code) still.
 
+## Tools
+
+### wof-bundle-metafiles
+
+_Please write me._
+
+```
+./bin/wof-bundle-metafiles -source file:///usr/local/data/whosonfirst-data-venue-lagov/data -name 3co-venue-lagov -dated -dest ./ -compress /usr/local/data/whosonfirst-data-venue-lagov/meta/wof-whosonfirst-data-venue-lagov-latest.csv
+2017/07/18 19:22:19 /usr/local/mapzen/go-whosonfirst-bundles/3co-venue-lagov-20170718.tar.bz2
+```
+
 ## See also
 
 * https://github.com/whosonfirst/go-whosonfirst-clone

@@ -13,9 +13,9 @@ func CompressBundle(path string) (string, error) {
 	tar := "tar"
 
 	args := []string{
-		"-cvjf",
-		path,
+		"-cjf", // -c is for create; -j is for bzip; -f if for file
 		cpath,
+		path,
 	}
 
 	cmd := exec.Command(tar, args...)
@@ -24,6 +24,8 @@ func CompressBundle(path string) (string, error) {
 	cmd.Stdout = &out
 
 	err := cmd.Run()
+
+	// fmt.Println(tar, args, out.String())
 
 	if err != nil {
 		return "", err

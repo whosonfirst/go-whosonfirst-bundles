@@ -235,11 +235,19 @@ func (b *Bundle) BundleMetafile(metafile string) (string, error) {
 
 	if opts.Compress {
 
-		bundle_root, err = compress.CompressBundle(bundle_root)
+		bundle_compressed, err := compress.CompressBundle(bundle_root)
 
 		if err != nil {
 			return "", err
 		}
+
+		err = os.RemoveAll(bundle_root)
+
+		if err != nil {
+			return "", err
+		}
+
+		bundle_root = bundle_compressed
 	}
 
 	return bundle_root, nil

@@ -3,3 +3,5 @@ pkg
 src
 bin/wof-*
 !vendor/src
+*.tar
+*.bz2
