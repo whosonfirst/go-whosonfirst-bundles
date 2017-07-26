@@ -11,22 +11,7 @@ import (
 
 func CompressFile(source string, chroot string, opts *CompressOptions) (string, error) {
 
-	abs_source, err := filepath.Abs(source)
-
-	if err != nil {
-		return "", err
-	}
-
-	abs_chroot, err := filepath.Abs(chroot)
-
-	if err != nil {
-		return "", err
-	}
-
-	fname := filepath.Base(abs_source)
-	fname = fmt.Sprintf("%s.bz2", fname)
-
-	dest := filepath.Join(abs_chroot, fname)
+	dest, err := CompressedFilePath(source, chroot)
 
 	tar := "bzip2"
 
@@ -73,5 +58,26 @@ func CompressFile(source string, chroot string, opts *CompressOptions) (string, 
 		}
 	}
 
+	return dest, nil
+}
+
+func CompressedFilePath(source string, chroot string) (string, error) {
+
+	abs_source, err := filepath.Abs(source)
+
+	if err != nil {
+		return "", err
+	}
+
+	abs_chroot, err := filepath.Abs(chroot)
+
+	if err != nil {
+		return "", err
+	}
+
+	fname := filepath.Base(abs_source)
+	fname = fmt.Sprintf("%s.bz2", fname)
+
+	dest := filepath.Join(abs_chroot, fname)
 	return dest, nil
 }
