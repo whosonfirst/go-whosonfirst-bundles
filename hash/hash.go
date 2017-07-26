@@ -8,6 +8,23 @@ import (
 	"os"
 )
 
+func ReadHashFile(source string) (string, error) {
+
+	fh, err := os.Open(source)
+
+	if err != nil {
+		return "", nil
+	}
+
+	body, err := ioutil.ReadAll(fh)
+
+	if err != nil {
+		return "", nil
+	}
+
+	return string(body), nil
+}
+
 func WriteHashFile(source string) (string, error) {
 
 	dest := fmt.Sprintf("%s.sha1.txt", source)
