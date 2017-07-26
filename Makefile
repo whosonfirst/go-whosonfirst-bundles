@@ -22,6 +22,7 @@ self:   prep
 deps:   rmdeps
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-clone"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-log"
+	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-repo"
 
 vendor-deps: deps
 	if test ! -d vendor; then mkdir vendor; fi
