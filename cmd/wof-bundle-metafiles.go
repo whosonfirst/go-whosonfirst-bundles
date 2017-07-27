@@ -33,17 +33,20 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-bundles"
 	"github.com/whosonfirst/go-whosonfirst-bundles/compress"
 	"github.com/whosonfirst/go-whosonfirst-bundles/hash"
+	// "github.com/whosonfirst/go-whosonfirst-repo"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func main() {
 
-	var source = flag.String("source", "https://s3.amazonaws.com/whosonfirst.mapzen.com/data/", "Where to look for files")
+	// var source = flag.String("source", "https://s3.amazonaws.com/whosonfirst.mapzen.com/data/", "Where to look for files")
 	var dest = flag.String("dest", "", "Where to write files")
 
-	var name = flag.String("name", "", "...")
+	var mode = flag.String("mode", "repo", "...")
 
 	var compress_bundle = flag.Bool("compress", false, "...")
 	var dated = flag.Bool("dated", false, "...")
@@ -51,6 +54,7 @@ func main() {
 	var skip_existing = flag.Bool("skip-existing", false, "Skip existing files on disk (without checking for remote changes)")
 	var force_updates = flag.Bool("force-updates", false, "Force updates to files on disk (without checking for remote changes)")
 
+	// var name = flag.String("name", "", "...")
 	// var procs = flag.Int("procs", (runtime.NumCPU() * 2), "The number of concurrent processes to clone data with")
 	// var loglevel = flag.String("loglevel", "info", "The level of detail for logging")
 	// var strict = flag.Bool("strict", false, "Exit (1) if any meta file fails cloning")
@@ -58,117 +62,150 @@ func main() {
 	flag.Parse()
 	args := flag.Args()
 
-	opts := bundles.DefaultBundleOptions()
+	if *mode == "repo" {
 
-	opts.Source = *source
-	opts.Destination = *dest
-	opts.BundleName = *name
-	opts.Compress = *compress_bundle
-	opts.Dated = *dated
-	opts.SkipExisting = *skip_existing
-	opts.ForceUpdates = *force_updates
+		for _, path := range args {
 
-	b, err := bundles.NewBundle(opts)
+			abs_repo, err := filepath.Abs(path)
 
-	if err != nil {
-		log.Fatal(err)
-	}
+			if err != nil {
+				log.Fatal(err)
+			}
 
-	for _, metafile := range args {
+			// please make sure these exist...
 
-		abs_path, err := filepath.Abs(metafile)
+			abs_meta := filepath.Join(abs_repo, "meta")
+			abs_data := filepath.Join(abs_repo, "data")
 
-		if err != nil {
-			log.Fatal(err)
-		}
+			metafiles := make([]string, 0)
 
-		if !*force_updates {
+			files, err := ioutil.ReadDir(abs_meta)
 
-			fname := filepath.Base(metafile)
-			hname := fmt.Sprintf("%s.sha1.txt", fname)
+			if err != nil {
+				log.Fatal(err)
+			}
 
-			hfile := filepath.Join(*dest, hname)
+			for _, file := range files {
+				fname := file.Name()
 
-			_, err = os.Stat(hfile)
-
-			if !os.IsNotExist(err) {
-
-				last_hash, err := hash.ReadHashFile(hfile)
-
-				if err != nil {
-					log.Fatal(err)
+				if strings.HasSuffix(fname, "-meta-latest.csv") {
+					metafiles = append(metafiles, fname)
+					continue
 				}
 
-				current_hash, err := hash.HashFile(abs_path)
-
-				if err != nil {
-					log.Fatal(err)
-				}
-
-				if last_hash == current_hash {
+				if strings.HasSuffix(fname, "-latest.csv") && !strings.HasSuffix(fname, "-concordances-latest.csv") {
+					metafiles = append(metafiles, fname)
 					continue
 				}
 			}
-		}
 
-		//
+			for _, fname := range metafiles {
 
-		bundle_path, err := b.BundleMetafile(metafile)
+				metafile := filepath.Join(abs_meta, fname)
 
-		if err != nil {
-			log.Fatal(err)
-		}
+				bundle_name := strings.Replace(fname, "-latest.csv", "", -1)
 
-		log.Println(bundle_path)
+				opts := bundles.DefaultBundleOptions()
 
-		if *compress_bundle {
+				opts.Source = fmt.Sprintf("file://%s", abs_data)
+				opts.Destination = *dest
+				opts.BundleName = bundle_name
+				opts.Compress = *compress_bundle
+				opts.Dated = *dated
+				opts.SkipExisting = *skip_existing
+				opts.ForceUpdates = *force_updates
 
-			chroot := opts.Destination
+				b, err := bundles.NewBundle(opts)
 
-			compress_opts := compress.DefaultCompressOptions()
-			compress_opts.RemoveSource = true
+				if err != nil {
+					log.Fatal(err)
+				}
 
-			compressed_path, err := compress.CompressBundle(bundle_path, chroot, compress_opts)
+				if err != nil {
+					log.Fatal(err)
+				}
 
-			if err != nil {
-				log.Fatal(err)
+				if !*force_updates {
+
+					sha1_path, err := compress.CompressedFilePath(metafile, opts.Destination)
+
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					_, err = os.Stat(sha1_path)
+
+					if !os.IsNotExist(err) {
+
+						last_hash, err := hash.ReadHashFile(sha1_path)
+
+						if err != nil {
+							log.Fatal(err)
+						}
+
+						current_hash, err := hash.HashFile(metafile)
+
+						if err != nil {
+							log.Fatal(err)
+						}
+
+						if last_hash == current_hash {
+							log.Println("no changes", metafile)
+							continue
+						}
+					}
+				}
+
+				//
+
+				bundle_path, err := b.BundleMetafile(metafile)
+
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				if *compress_bundle {
+
+					chroot := opts.Destination
+
+					compress_opts := compress.DefaultCompressOptions()
+					compress_opts.RemoveSource = true
+
+					compressed_path, err := compress.CompressBundle(bundle_path, chroot, compress_opts)
+
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					sha1_path, err := hash.WriteHashFile(compressed_path)
+
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					log.Println(compressed_path)
+					log.Println(sha1_path)
+				}
+
+				compress_opts := compress.DefaultCompressOptions()
+				compressed_path, err := compress.CompressFile(metafile, opts.Destination, compress_opts)
+
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				sha1_path, err := hash.WriteHashFile(compressed_path)
+
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				log.Println(compressed_path)
+				log.Println(sha1_path)
 			}
-
-			sha1_path, err := hash.WriteHashFile(compressed_path)
-
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			log.Println(compressed_path)
-			log.Println(sha1_path)
 		}
-
-		compress_opts := compress.DefaultCompressOptions()
-		compressed_path, err := compress.CompressFile(metafile, opts.Destination, compress_opts)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		sha1_path, err := hash.WriteHashFile(compressed_path)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		log.Println(compressed_path)
-		log.Println(sha1_path)
-
-		//
-
-		check_path, err := hash.WriteHashFile(abs_path)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		log.Println(check_path)
+	} else {
+		log.Fatal("Unsupported mode")
 	}
 
 	os.Exit(0)
