@@ -9,7 +9,6 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-bundles/compress"
 	"github.com/whosonfirst/go-whosonfirst-bundles/hash"
 	log "github.com/whosonfirst/go-whosonfirst-log"
-	_ "github.com/whosonfirst/go-whosonfirst-repo"
 	"io"
 	"io/ioutil"
 	_ "log"
@@ -29,7 +28,7 @@ func main() {
 	var skip_existing = flag.Bool("skip-existing", false, "Skip existing files on disk (without checking for remote changes)")
 	var force = flag.Bool("force", false, "Force updates to files (regardless of whether a metafile has changed)")
 
-	var loglevel = flag.String("loglevel", "info", "The level of detail for logging")
+	var loglevel = flag.String("loglevel", "status", "The level of detail for logging")
 	// var strict = flag.Bool("strict", false, "Exit (1) if any meta file fails cloning")
 
 	flag.Parse()
