@@ -76,6 +76,8 @@ func main() {
 				logger.Fatal("failed to readdir for %s, because %s", abs_meta, err)
 			}
 
+			t1 := time.Now()
+
 			for _, file := range files {
 
 				fname := file.Name()
@@ -98,7 +100,7 @@ func main() {
 
 			for _, fname := range metafiles {
 
-				t1 := time.Now()
+				ta := time.Now()
 
 				metafile := filepath.Join(abs_meta, fname)
 
@@ -242,9 +244,13 @@ func main() {
 
 				logger.Info("%s (%s)", compressed_metafile_path, sha1_metafile_path)
 
-				t2 := time.Since(t1)
-				logger.Status("finished bundling %s in %v", metafile, t2)
+				tb := time.Since(ta)
+				logger.Status("finished bundling %s in %v", metafile, tb)
 			}
+
+			t2 := time.Since(t1)
+			logger.Status("finished bundling metafiles in %s in %v", abs_repo, t2)
+
 		}
 
 	} else {
