@@ -174,6 +174,23 @@ func main() {
 					}
 				}
 
+				bundle_root, err := b.BundleRoot(metafile)
+
+				if err != nil {
+					logger.Fatal("unable to determine bundle root for %s, because %s", metafile, err)
+				}
+
+				_, err = os.Stat(bundle_root)
+
+				if !os.IsNotExist(err) {
+
+					err = os.RemoveAll(bundle_root)
+
+					if err != nil {
+						logger.Fatal("failed to remove %s, because %s", bundle_root, err)
+					}
+				}
+
 				bundle_path, err := b.BundleMetafile(metafile)
 
 				if err != nil {

@@ -113,7 +113,7 @@ func (b *Bundle) BundleMetafile(metafile string) (string, error) {
 	if !os.IsNotExist(err) {
 
 		if info.IsDir() {
-			return "", errors.New("Bundle already exists, please move it before proceeding")
+			return "", errors.New("bundle already exists, please move it before proceeding")
 		}
 	}
 
