@@ -104,21 +104,10 @@ func main() {
 
 				metafile := filepath.Join(abs_meta, fname)
 
-				// sudo make this part of go-wof-repo... maybe?
-
-				bundle_name := fname
-
-				bundle_name = strings.Replace(bundle_name, "-meta.csv", "", -1)
-				bundle_name = strings.Replace(bundle_name, "-latest.csv", "", -1)
-				bundle_name = strings.Replace(bundle_name, "-meta-latest.csv", "", -1)
-
-				// log.Println("bundle name", bundle_name)
-
 				opts := bundles.DefaultBundleOptions()
 
 				opts.Source = fmt.Sprintf("file://%s", abs_data)
 				opts.Destination = *dest
-				opts.BundleName = bundle_name
 				opts.Compress = *compress_bundle
 				opts.Dated = *dated
 				opts.SkipExisting = *skip_existing
@@ -128,7 +117,7 @@ func main() {
 				b, err := bundles.NewBundle(opts)
 
 				if err != nil {
-					logger.Fatal("failed to create new bundle for %s (%s), because %s", metafile, bundle_name, err)
+					logger.Fatal("failed to create new bundle for %s, because %s", metafile, err)
 				}
 
 				compressed_metafile_path, err := compress.CompressedFilePath(metafile, opts.Destination)

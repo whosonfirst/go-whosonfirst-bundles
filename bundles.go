@@ -69,7 +69,12 @@ func (b *Bundle) BundleName(metafile string) (string, error) {
 	if bundle_name == "" {
 
 		meta_ext := filepath.Ext(meta_fname)
-		bundle_name = strings.Replace(meta_fname, meta_ext, "-bundle", -1)
+		bundle_name = strings.Replace(meta_fname, meta_ext, "", -1)
+		bundle_name = strings.Replace(bundle_name, "-meta-latest", "", -1)
+		bundle_name = strings.Replace(bundle_name, "-meta", "", -1)
+		bundle_name = strings.Replace(bundle_name, "-latest", "", -1)
+
+		bundle_name = fmt.Sprintf("%s-latest-bundle", bundle_name)
 	}
 
 	if opts.Dated {
@@ -77,7 +82,7 @@ func (b *Bundle) BundleName(metafile string) (string, error) {
 		ts := time.Now()
 		ymd := ts.Format("20060102") // Go... Y U so weird
 
-		bundle_name = fmt.Sprintf("%s-%s", bundle_name, ymd)
+		bundle_name = fmt.Sprintf("%s-%s-bundle", bundle_name, ymd)
 	}
 
 	return bundle_name, nil
