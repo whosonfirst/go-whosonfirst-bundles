@@ -27,7 +27,7 @@ func main() {
 	var dated = flag.Bool("dated", false, "...")
 
 	var skip_existing = flag.Bool("skip-existing", false, "Skip existing files on disk (without checking for remote changes)")
-	var force_updates = flag.Bool("force-updates", false, "Force updates to files on disk (without checking for remote changes)")
+	var force = flag.Bool("force", false, "Force updates to files (regardless of whether a metafile has changed)")
 
 	var loglevel = flag.String("loglevel", "info", "The level of detail for logging")
 	// var strict = flag.Bool("strict", false, "Exit (1) if any meta file fails cloning")
@@ -52,10 +52,21 @@ func main() {
 				logger.Fatal("failed to make absolute path for %s, because %s", path, err)
 			}
 
-			// please make sure these exist...
-
 			abs_meta := filepath.Join(abs_repo, "meta")
+
+			_, err = os.Stat(abs_meta)
+
+			if os.IsNotExist(err) {
+				logger.Fatal("meta directory %s is missing", abs_meta)
+			}
+
 			abs_data := filepath.Join(abs_repo, "data")
+
+			_, err = os.Stat(abs_data)
+
+			if os.IsNotExist(err) {
+				logger.Fatal("data directory %s is missing", abs_data)
+			}
 
 			metafiles := make([]string, 0)
 
@@ -107,7 +118,7 @@ func main() {
 				opts.Compress = *compress_bundle
 				opts.Dated = *dated
 				opts.SkipExisting = *skip_existing
-				opts.ForceUpdates = *force_updates
+				opts.ForceUpdates = *force
 				opts.Logger = logger
 
 				b, err := bundles.NewBundle(opts)
@@ -116,17 +127,21 @@ func main() {
 					logger.Fatal("failed to create new bundle for %s (%s), because %s", metafile, bundle_name, err)
 				}
 
-				if !*force_updates {
+				compressed_metafile_path, err := compress.CompressedFilePath(metafile, opts.Destination)
 
-					sha1_path, err := compress.CompressedFilePath(metafile, opts.Destination)
+				if err != nil {
+					logger.Fatal("failed to determined compressed path for %s, because %s", metafile, err)
+				}
 
-					if err != nil {
-						logger.Fatal("failed to determined compressed path for %s, because %s", metafile, err)
-					}
+				if !*force {
+
+					sha1_path := hash.HashFilePath(compressed_metafile_path)
 
 					_, err = os.Stat(sha1_path)
 
 					if !os.IsNotExist(err) {
+
+						logger.Info("comparing hashes for %s", compressed_metafile_path)
 
 						last_hash, err := hash.ReadHashFile(sha1_path)
 
@@ -134,14 +149,24 @@ func main() {
 							logger.Fatal("failed to read hash file for %s, because %s", sha1_path, err)
 						}
 
-						current_hash, err := hash.HashFile(metafile)
+						compress_opts := compress.DefaultCompressOptions()
+						compressed_metafile_path, err = compress.CompressFile(metafile, opts.Destination, compress_opts)
 
 						if err != nil {
-							logger.Fatal("failed to hash metafile %s, because %s", metafile, err)
+							logger.Fatal("failed to compresse metafile %s, because %s", metafile, err)
 						}
 
+						current_hash, err := hash.HashFile(compressed_metafile_path)
+
+						if err != nil {
+							logger.Fatal("failed to hash metafile %s, because %s", compressed_metafile_path, err)
+						}
+
+						logger.Debug("last hash (%s) is %s", sha1_path, last_hash)
+						logger.Debug("last hash (%s) is %s", metafile, current_hash)
+
 						if last_hash == current_hash {
-							logger.Info("no changes to %s, skipping", metafile)
+							logger.Info("no changes to %s, skipping", compressed_metafile_path)
 							continue
 						}
 					}
@@ -162,36 +187,29 @@ func main() {
 					compress_opts := compress.DefaultCompressOptions()
 					compress_opts.RemoveSource = true
 
-					compressed_path, err := compress.CompressBundle(bundle_path, chroot, compress_opts)
+					compressed_bundle_path, err := compress.CompressBundle(bundle_path, chroot, compress_opts)
 
 					if err != nil {
 						logger.Fatal("failed to compress bundle %s, because %s", bundle_path, err)
 					}
 
-					sha1_path, err := hash.WriteHashFile(compressed_path)
+					sha1_bundle_path, err := hash.WriteHashFile(compressed_bundle_path)
 
 					if err != nil {
-						logger.Fatal("failed to write hash file for %s, because %s", compressed_path, err)
+						logger.Fatal("failed to write hash file for %s, because %s", compressed_bundle_path, err)
 					}
 
-					logger.Info(compressed_path)
-					logger.Info(sha1_path)
+					logger.Info(compressed_bundle_path)
+					logger.Info(sha1_bundle_path)
 				}
 
-				compress_opts := compress.DefaultCompressOptions()
-				compressed_path, err := compress.CompressFile(metafile, opts.Destination, compress_opts)
+				sha1_metafile_path, err := hash.WriteHashFile(compressed_metafile_path)
 
 				if err != nil {
-					logger.Fatal("failed to compresse metafile %s, because %s", metafile, err)
+					logger.Fatal("failed to write hash file for %s, because %s", compressed_metafile_path, err)
 				}
 
-				sha1_path, err := hash.WriteHashFile(compressed_path)
-
-				if err != nil {
-					logger.Fatal("failed to write hash file for %s, because %s", compressed_path, err)
-				}
-
-				logger.Info("%s (%s)", compressed_path, sha1_path)
+				logger.Info("%s (%s)", compressed_metafile_path, sha1_metafile_path)
 			}
 		}
 

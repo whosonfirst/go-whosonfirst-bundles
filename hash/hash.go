@@ -27,7 +27,7 @@ func ReadHashFile(source string) (string, error) {
 
 func WriteHashFile(source string) (string, error) {
 
-	dest := fmt.Sprintf("%s.sha1.txt", source)
+	dest := HashFilePath(source)
 	hash, err := HashFile(source)
 
 	if err != nil {
@@ -44,6 +44,11 @@ func WriteHashFile(source string) (string, error) {
 	fh.Close()
 
 	return dest, nil
+}
+
+func HashFilePath(path string) string {
+
+	return fmt.Sprintf("%s.sha1.txt", path)
 }
 
 func HashFile(path string) (string, error) {
