@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 func main() {
@@ -97,6 +98,8 @@ func main() {
 
 			for _, fname := range metafiles {
 
+				t1 := time.Now()
+
 				metafile := filepath.Join(abs_meta, fname)
 
 				// sudo make this part of go-wof-repo... maybe?
@@ -165,7 +168,7 @@ func main() {
 						logger.Debug("last hash (%s) is %s", metafile, current_hash)
 
 						if last_hash == current_hash {
-							logger.Info("no changes to %s, skipping", compressed_metafile_path)
+							logger.Status("no changes to %s, skipping", compressed_metafile_path)
 							continue
 						}
 					}
@@ -202,6 +205,18 @@ func main() {
 					logger.Info(sha1_bundle_path)
 				}
 
+				_, err = os.Stat(compressed_metafile_path)
+
+				if os.IsNotExist(err) {
+
+					compress_opts := compress.DefaultCompressOptions()
+					compressed_metafile_path, err = compress.CompressFile(metafile, opts.Destination, compress_opts)
+
+					if err != nil {
+						logger.Fatal("failed to compresse metafile %s, because %s", metafile, err)
+					}
+				}
+
 				sha1_metafile_path, err := hash.WriteHashFile(compressed_metafile_path)
 
 				if err != nil {
@@ -209,6 +224,9 @@ func main() {
 				}
 
 				logger.Info("%s (%s)", compressed_metafile_path, sha1_metafile_path)
+
+				t2 := time.Since(t1)
+				logger.Status("finished bundling %s in %v", metafile, t2)
 			}
 		}
 
