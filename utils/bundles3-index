@@ -1,0 +1,13 @@
+#!/bin/sh
+# -*-shell-*-
+
+BUCKET=$1
+REGION=$2
+
+INDEX='/tmp/bundles-index.txt'
+
+aws s3 ls s3://${BUCKET}/bundles/ | grep '\-bundle' | grep -v sha1 | awk '{ print $4 }' > ${INDEX}
+aws s3 --region ${REGION} cp ${INDEX} s3://${BUCKET}/bundles/index.txt
+
+rm -f ${INDEX}
+exit 0

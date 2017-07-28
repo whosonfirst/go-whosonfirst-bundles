@@ -1,0 +1,40 @@
+#!/bin/sh
+# -*-shell-*-
+
+BUCKET=$1
+REGION=$2
+
+NOW=`date +"%s"`
+TTL=$((86400 * 14))
+
+aws s3 ls --region ${REGION} s3://${BUCKET}/bundles/ | grep -v '\-latest' | while read BUNDLE
+do
+
+    # echo ${BUNDLE}
+    FNAME=`echo ${BUNDLE} | awk '{ print $4}'`
+
+    if [ "${FNAME}" = "" ]
+    then
+	continue
+    fi
+
+    YMD=`echo ${BUNDLE} | awk '{ print $1 }'`
+    YYYY=`echo ${YMD} | awk -F '-' '{ print $1 }'`
+    MM=`echo ${YMD} | awk -F '-' '{ print $2 }'`
+    DD=`echo ${YMD} | awk -F '-' '{ print $3 }'`
+    HMS=`echo ${BUNDLE} | awk '{ print $2 }'`
+
+    # echo "${MM}/${DD}/${YYYY} ${HMS}"
+
+    TS=`date -d "${MM}/${DD}/${YYYY} ${HMS}" +"%s"`
+    DIFF=$(($NOW - $TS))
+
+    if [ ${DIFF} -gt ${TTL} ]
+    then
+	# echo "prune ${FNAME} (${DIFF})"
+	aws s3 rm --region ${REGION} s3://${BUCKET}/bundles/${FNAME}
+    fi
+
+done
+
+exit 0

@@ -1,11 +1,6 @@
 package main
 
-// wof-bundle-metafiles -dest /usr/local/data/bundles -compress /usr/local/data/whosonfirst-data
-// aws s3 --region us-east-1 sync /usr/local/data/bundles/ s3://whosonfirst.mapzen.com/bundles/
-// aws s3 ls s3://threescompany.dev.mapzen.com/bundles/ | grep latest-bundle | grep -v 'sha1' | awk '{ print $1"-"$2"-"$4 }'
-// 2017-07-28-20:18:36-wof-borough-latest-bundle.tar.bz2
-// 2017-07-28-20:18:56-wof-campus-latest-bundle.tar.bz2
-// ...
+// see also: 
 
 import (
 	"flag"
