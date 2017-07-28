@@ -1,14 +1,12 @@
 package bundles
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-clone"
 	"github.com/whosonfirst/go-whosonfirst-log"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -179,37 +177,4 @@ func (b *Bundle) BundleMetafile(metafile string) (string, error) {
 	fh.Close()
 
 	return bundle_root, nil
-}
-
-func (b *Bundle) CompressBundle(path string) (string, error) {
-
-	opts := b.Options
-
-	tarball_path := fmt.Sprintf("%s.tar.bz2", path)
-
-	tar := "tar"
-
-	args := []string{
-		"-C", opts.Destination, // -C is for ...
-		"-cjf", // -c is for create; -j is for bzip; -f if for file
-		tarball_path,
-		path,
-	}
-
-	cmd := exec.Command(tar, args...)
-
-	// to do : wire the b.Options.Logger in to this...
-
-	var out bytes.Buffer
-	cmd.Stdout = &out
-
-	err := cmd.Run()
-
-	// fmt.Println(tar, args, out.String())
-
-	if err != nil {
-		return "", err
-	}
-
-	return tarball_path, nil
 }

@@ -54,7 +54,6 @@ func main() {
 	var skip_existing = flag.Bool("skip-existing", false, "Skip existing files on disk (without checking for remote changes)")
 	var force_updates = flag.Bool("force-updates", false, "Force updates to files on disk (without checking for remote changes)")
 
-	// var name = flag.String("name", "", "...")
 	// var procs = flag.Int("procs", (runtime.NumCPU() * 2), "The number of concurrent processes to clone data with")
 	// var loglevel = flag.String("loglevel", "info", "The level of detail for logging")
 	// var strict = flag.Bool("strict", false, "Exit (1) if any meta file fails cloning")
@@ -86,7 +85,13 @@ func main() {
 			}
 
 			for _, file := range files {
+
 				fname := file.Name()
+
+				if strings.HasSuffix(fname, "-meta.csv") {
+					metafiles = append(metafiles, fname)
+					continue
+				}
 
 				if strings.HasSuffix(fname, "-meta-latest.csv") {
 					metafiles = append(metafiles, fname)
@@ -103,9 +108,17 @@ func main() {
 
 				metafile := filepath.Join(abs_meta, fname)
 
-				bundle_name := strings.Replace(fname, "-latest.csv", "", -1)
+				// sudo make this part of go-wof-repo... maybe?
 
-				opts := bundles.DefaultBundleOptions()
+				bundle_name := fname
+
+				bundle_name = strings.Replace(bundle_name, "-meta.csv", "", -1)
+				bundle_name = strings.Replace(bundle_name, "-latest.csv", "", -1)
+				bundle_name = strings.Replace(bundle_name, "-meta-latest.csv", "", -1)
+
+				log.Println("bundle name", bundle_name)
+
+				// opts := bundles.DefaultBundleOptions()
 
 				opts.Source = fmt.Sprintf("file://%s", abs_data)
 				opts.Destination = *dest
@@ -155,8 +168,6 @@ func main() {
 						}
 					}
 				}
-
-				//
 
 				bundle_path, err := b.BundleMetafile(metafile)
 

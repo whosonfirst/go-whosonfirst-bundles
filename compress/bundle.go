@@ -3,6 +3,7 @@ package compress
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -30,6 +31,8 @@ func CompressBundle(source string, chroot string, opts *CompressOptions) (string
 		dest,
 		source,
 	}
+
+	log.Println(tar, args)
 
 	cmd := exec.Command(tar, args...)
 
