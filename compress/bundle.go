@@ -29,7 +29,7 @@ func CompressBundle(source string, chroot string, opts *CompressOptions) (string
 
 	rel_source := strings.Replace(source, abs_chroot, "", 1)
 
-	if strings.HasPrefix(rel_source, "/"){
+	if strings.HasPrefix(rel_source, "/") {
 		rel_source = strings.Replace(rel_source, "/", "", 1)
 	}
 

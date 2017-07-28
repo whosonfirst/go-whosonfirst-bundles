@@ -1,31 +1,6 @@
 package main
 
-/*
-
-given a metafile:
-
-      - calculate the hash (mhash) for that file (uncompressed)
-      - generate a filename (hfile) that stores the contents of the hash
-
-      - check for the existence of hfile
-      - compare the contents of hfile against mhash
-
-      - if hfile == mhash and !force, exit
-
-      (OR NOT - MAYBE JUST ALWAYS COMPRESS AND HASH THE METAFILE AND BE DONE WITH IT...)
-
-      - generate bundle for metafile
-      - compress the bundle for metafile
-      - generate hash and hashfile for (compressed) bundle
-
-      - compress metafile
-      - generate hash and hashfile for (compressed) metafile
-
-      - generate hashfile for (uncompressed) metafile
-
-      - cp compressed bundle, compressed bundle hash, compressed metafile, compressed metafile hash to (someplace)
-
-*/
+// ./bin/wof-bundle-metafiles -force-updates -compress -dest /usr/local/data/bundles/ -mode repo /usr/local/data/whosonfirst-data
 
 import (
 	"flag"
@@ -33,9 +8,11 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-bundles"
 	"github.com/whosonfirst/go-whosonfirst-bundles/compress"
 	"github.com/whosonfirst/go-whosonfirst-bundles/hash"
-	// "github.com/whosonfirst/go-whosonfirst-repo"
+	log "github.com/whosonfirst/go-whosonfirst-log"
+	_ "github.com/whosonfirst/go-whosonfirst-repo"
+	"io"
 	"io/ioutil"
-	"log"
+	_ "log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -43,9 +20,7 @@ import (
 
 func main() {
 
-	// var source = flag.String("source", "https://s3.amazonaws.com/whosonfirst.mapzen.com/data/", "Where to look for files")
 	var dest = flag.String("dest", "", "Where to write files")
-
 	var mode = flag.String("mode", "repo", "...")
 
 	var compress_bundle = flag.Bool("compress", false, "...")
@@ -54,12 +29,18 @@ func main() {
 	var skip_existing = flag.Bool("skip-existing", false, "Skip existing files on disk (without checking for remote changes)")
 	var force_updates = flag.Bool("force-updates", false, "Force updates to files on disk (without checking for remote changes)")
 
-	// var procs = flag.Int("procs", (runtime.NumCPU() * 2), "The number of concurrent processes to clone data with")
-	// var loglevel = flag.String("loglevel", "info", "The level of detail for logging")
+	var loglevel = flag.String("loglevel", "info", "The level of detail for logging")
 	// var strict = flag.Bool("strict", false, "Exit (1) if any meta file fails cloning")
 
 	flag.Parse()
 	args := flag.Args()
+
+	stdout := io.Writer(os.Stdout)
+	stderr := io.Writer(os.Stderr)
+
+	logger := log.NewWOFLogger("wof-bundle-metafiles")
+	logger.AddLogger(stdout, *loglevel)
+	logger.AddLogger(stderr, "error")
 
 	if *mode == "repo" {
 
@@ -68,7 +49,7 @@ func main() {
 			abs_repo, err := filepath.Abs(path)
 
 			if err != nil {
-				log.Fatal(err)
+				logger.Fatal("failed to make absolute path for %s, because %s", path, err)
 			}
 
 			// please make sure these exist...
@@ -81,7 +62,7 @@ func main() {
 			files, err := ioutil.ReadDir(abs_meta)
 
 			if err != nil {
-				log.Fatal(err)
+				logger.Fatal("failed to readdir for %s, because %s", abs_meta, err)
 			}
 
 			for _, file := range files {
@@ -127,15 +108,12 @@ func main() {
 				opts.Dated = *dated
 				opts.SkipExisting = *skip_existing
 				opts.ForceUpdates = *force_updates
+				opts.Logger = logger
 
 				b, err := bundles.NewBundle(opts)
 
 				if err != nil {
-					log.Fatal(err)
-				}
-
-				if err != nil {
-					log.Fatal(err)
+					logger.Fatal("failed to create new bundle for %s (%s), because %s", metafile, bundle_name, err)
 				}
 
 				if !*force_updates {
@@ -143,7 +121,7 @@ func main() {
 					sha1_path, err := compress.CompressedFilePath(metafile, opts.Destination)
 
 					if err != nil {
-						log.Fatal(err)
+						logger.Fatal("failed to determined compressed path for %s, because %s", metafile, err)
 					}
 
 					_, err = os.Stat(sha1_path)
@@ -153,17 +131,17 @@ func main() {
 						last_hash, err := hash.ReadHashFile(sha1_path)
 
 						if err != nil {
-							log.Fatal(err)
+							logger.Fatal("failed to read hash file for %s, because %s", sha1_path, err)
 						}
 
 						current_hash, err := hash.HashFile(metafile)
 
 						if err != nil {
-							log.Fatal(err)
+							logger.Fatal("failed to hash metafile %s, because %s", metafile, err)
 						}
 
 						if last_hash == current_hash {
-							log.Println("no changes", metafile)
+							logger.Info("no changes to %s, skipping", metafile)
 							continue
 						}
 					}
@@ -172,10 +150,10 @@ func main() {
 				bundle_path, err := b.BundleMetafile(metafile)
 
 				if err != nil {
-					log.Fatal(err)
+					logger.Fatal("failed to bundle metafile %s, because %s", metafile, err)
 				}
 
-				log.Println(bundle_path)
+				logger.Info("%s", bundle_path)
 
 				if *compress_bundle {
 
@@ -187,39 +165,38 @@ func main() {
 					compressed_path, err := compress.CompressBundle(bundle_path, chroot, compress_opts)
 
 					if err != nil {
-						log.Fatal(err)
+						logger.Fatal("failed to compress bundle %s, because %s", bundle_path, err)
 					}
 
 					sha1_path, err := hash.WriteHashFile(compressed_path)
 
 					if err != nil {
-						log.Fatal(err)
+						logger.Fatal("failed to write hash file for %s, because %s", compressed_path, err)
 					}
 
-					log.Println(compressed_path)
-					log.Println(sha1_path)
+					logger.Info(compressed_path)
+					logger.Info(sha1_path)
 				}
 
 				compress_opts := compress.DefaultCompressOptions()
 				compressed_path, err := compress.CompressFile(metafile, opts.Destination, compress_opts)
 
 				if err != nil {
-					log.Fatal(err)
+					logger.Fatal("failed to compresse metafile %s, because %s", metafile, err)
 				}
 
 				sha1_path, err := hash.WriteHashFile(compressed_path)
 
 				if err != nil {
-					log.Fatal(err)
+					logger.Fatal("failed to write hash file for %s, because %s", compressed_path, err)
 				}
 
-				log.Println(compressed_path)
-				log.Println(sha1_path)
+				logger.Info("%s (%s)", compressed_path, sha1_path)
 			}
 		}
 
 	} else {
-		log.Fatal("Unsupported mode")
+		logger.Fatal("Unsupported mode '%s'", *mode)
 	}
 
 	os.Exit(0)
