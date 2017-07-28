@@ -116,9 +116,9 @@ func main() {
 				bundle_name = strings.Replace(bundle_name, "-latest.csv", "", -1)
 				bundle_name = strings.Replace(bundle_name, "-meta-latest.csv", "", -1)
 
-				log.Println("bundle name", bundle_name)
+				// log.Println("bundle name", bundle_name)
 
-				// opts := bundles.DefaultBundleOptions()
+				opts := bundles.DefaultBundleOptions()
 
 				opts.Source = fmt.Sprintf("file://%s", abs_data)
 				opts.Destination = *dest
@@ -175,6 +175,8 @@ func main() {
 					log.Fatal(err)
 				}
 
+				log.Println(bundle_path)
+
 				if *compress_bundle {
 
 					chroot := opts.Destination
@@ -215,6 +217,7 @@ func main() {
 				log.Println(sha1_path)
 			}
 		}
+
 	} else {
 		log.Fatal("Unsupported mode")
 	}

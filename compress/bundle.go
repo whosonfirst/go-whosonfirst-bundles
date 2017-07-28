@@ -3,10 +3,11 @@ package compress
 import (
 	"bytes"
 	"fmt"
-	"log"
+	_ "log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 func CompressBundle(source string, chroot string, opts *CompressOptions) (string, error) {
@@ -23,16 +24,23 @@ func CompressBundle(source string, chroot string, opts *CompressOptions) (string
 		return "", err
 	}
 
+	// this bit is important - we are going to tar -C chroot
+	// so we don't want to pass an absolute path (to tar)
+
+	rel_source := strings.Replace(source, abs_chroot, "", 1)
+
+	if strings.HasPrefix(rel_source, "/"){
+		rel_source = strings.Replace(rel_source, "/", "", 1)
+	}
+
 	tar := "tar"
 
 	args := []string{
 		"-C", abs_chroot, // -C is for chroot
 		"-cjf", // -c is for create; -j is for bzip; -f if for file
 		dest,
-		source,
+		rel_source,
 	}
-
-	log.Println(tar, args)
 
 	cmd := exec.Command(tar, args...)
 
