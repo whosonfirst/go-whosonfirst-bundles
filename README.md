@@ -12,12 +12,6 @@ make bin
 
 All of this package's dependencies are bundled with the code in the `vendor` directory.
 
-## Important
-
-**This does not work yet. Like at all.**
-
-This is work in progress. It may change (and break your code) still.
-
 ## Tools
 
 ### wof-bundle-metafiles
