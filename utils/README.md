@@ -4,12 +4,12 @@
 
 Tools for cloning, pruning and indexing bundles in S3.
 
-### bundles3-prune
+### bundles3-prune-dated
 
 Prune any dated bundles or metafiles (see below) older than 14 days.
 
 ```
-$> bundles3-prune whosonfirst.mapzen.com us-east-1
+$> bundles3-prune-dated whosonfirst.mapzen.com us-east-1
 prune wof-continent-20170703T201836.csv.bz2
 ...and so on
 ```
