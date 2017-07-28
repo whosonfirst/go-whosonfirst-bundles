@@ -6,10 +6,13 @@ package main
 // And then:
 // aws s3 --region us-east-1 sync /usr/local/data/bundles/ s3://whosonfirst.mapzen.com/bundles/
 
-// And then for bonus points (https://github.com/whosonfirst/go-whosonfirst-bundles/tree/master/utils#bundles3-):
+// And then for bonus points:
 // utils/bundles3-prune-dated whosonfirst.mapzen.com us-east-1
 // utils/bundles3-latest-to-dated whosonfirst.mapzen.com us-east-1
 // utils/bundles3-index whosonfirst.mapzen.com us-east-1
+
+// See also:
+// https://github.com/whosonfirst/go-whosonfirst-bundles/tree/master/utils#bundles3-
 
 import (
 	"flag"
