@@ -1,9 +1,8 @@
 package hash
 
 import (
-	"crypto/sha1"
-	"encoding/hex"
 	"fmt"
+	"github.com/whosonfirst/go-whosonfirst-hash"
 	"io/ioutil"
 	"os"
 )
@@ -47,28 +46,15 @@ func WriteHashFile(source string) (string, error) {
 }
 
 func HashFilePath(path string) string {
-
 	return fmt.Sprintf("%s.sha1.txt", path)
 }
 
 func HashFile(path string) (string, error) {
-
-	fh, err := os.Open(path)
-
-	if err != nil {
-		return "", err
-	}
-
-	body, err := ioutil.ReadAll(fh)
+	h, err := hash.NewHash("sha1")
 
 	if err != nil {
 		return "", err
 	}
 
-	defer fh.Close()
-
-	hash := sha1.Sum(body)
-	enc := hex.EncodeToString(hash[:])
-
-	return enc, nil
+	return h.HashFile(path)
 }
