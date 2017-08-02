@@ -132,6 +132,9 @@ func main() {
 					logger.Fatal("failed to create new bundle for %s, because %s", metafile, err)
 				}
 
+				// working with compressed metafiles is a known-known, see also:
+				// https://github.com/whosonfirst/go-whosonfirst-bundles/issues/1
+
 				compressed_metafile_path, err := compress.CompressedFilePath(metafile, opts.Destination)
 
 				if err != nil {
