@@ -19,6 +19,7 @@ type BundleOptions struct {
 	BundleName   string
 	Compress     bool
 	Dated        bool
+	DateTime     string
 	SkipExisting bool
 	ForceUpdates bool
 	Processes    int
@@ -41,6 +42,7 @@ func DefaultBundleOptions() *BundleOptions {
 		BundleName:   "",
 		Compress:     false,
 		Dated:        false,
+		DateTime:     "",
 		SkipExisting: false,
 		ForceUpdates: false,
 		Processes:    processes,
@@ -62,32 +64,63 @@ func NewBundle(options *BundleOptions) (*Bundle, error) {
 func (b *Bundle) BundleName(metafile string) (string, error) {
 
 	opts := b.Options
+	bundle_name := opts.BundleName
+
+	if bundle_name != "" {
+		return bundle_name, nil
+	}
+
+	if opts.Dated {
+		return b.BundleNameDated(metafile)
+	}
+
+	return b.BundleNameLatest(metafile)
+}
+
+func (b *Bundle) BundleNameRoot(metafile string) (string, error) {
+
+	opts := b.Options
 
 	meta_fname := filepath.Base(metafile)
 	bundle_name := opts.BundleName
 
-	if bundle_name == "" {
+	meta_ext := filepath.Ext(meta_fname)
+	bundle_name = strings.Replace(meta_fname, meta_ext, "", -1)
+	bundle_name = strings.Replace(bundle_name, "-meta-latest", "", -1)
+	bundle_name = strings.Replace(bundle_name, "-meta", "", -1)
+	bundle_name = strings.Replace(bundle_name, "-latest", "", -1)
 
-		meta_ext := filepath.Ext(meta_fname)
-		bundle_name = strings.Replace(meta_fname, meta_ext, "", -1)
-		bundle_name = strings.Replace(bundle_name, "-meta-latest", "", -1)
-		bundle_name = strings.Replace(bundle_name, "-meta", "", -1)
-		bundle_name = strings.Replace(bundle_name, "-latest", "", -1)
+	return bundle_name, nil
+}
 
-		if opts.Dated {
+func (b *Bundle) BundleNameLatest(metafile string) (string, error) {
 
-			ts := time.Now()
-			ymd := ts.Format("20060102T150405") // Go... Y U so weird
+	bundle_name, err := b.BundleNameRoot(metafile)
 
-			bundle_name = fmt.Sprintf("%s-%s-bundle", bundle_name, ymd)
-
-		} else {
-
-			bundle_name = fmt.Sprintf("%s-latest-bundle", bundle_name)
-		}
-
+	if err != nil {
+		return "", nil
 	}
 
+	bundle_name = fmt.Sprintf("%s-latest-bundle", bundle_name)
+	return bundle_name, nil
+}
+
+func (b *Bundle) BundleNameDated(metafile string) (string, error) {
+
+	bundle_name, err := b.BundleNameRoot(metafile)
+
+	if err != nil {
+		return "", nil
+	}
+
+	if b.Options.DateTime == "" {
+		ts := time.Now()
+		dt := ts.Format("20060102T150405") // Go... Y U so weird
+
+		b.Options.DateTime = dt
+	}
+
+	bundle_name = fmt.Sprintf("%s-%s-bundle", bundle_name, b.Options.DateTime)
 	return bundle_name, nil
 }
 

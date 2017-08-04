@@ -17,6 +17,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/facebookgo/atomicfile"
 	"github.com/whosonfirst/go-whosonfirst-bundles"
 	"github.com/whosonfirst/go-whosonfirst-bundles/compress"
 	"github.com/whosonfirst/go-whosonfirst-bundles/hash"
@@ -27,6 +28,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -100,6 +102,12 @@ func main() {
 			if err != nil {
 				logger.Fatal("failed to readdir for %s, because %s", abs_meta, err)
 			}
+
+			// we use to clone DATED -> latest bundles in goroutines
+			// but not to exit before those processes are done
+			// (20170804/thisisaaronland)
+
+			wg := new(sync.WaitGroup)
 
 			t1 := time.Now()
 
@@ -284,13 +292,49 @@ func main() {
 
 				bi.MetafileCompressedHashPath = sha1_metafile_path
 
-				if opts.Dated {
-					// copy DATED to latest
+				if *dated && *compress_bundle {
+
+					meta := bi.MetafilePath
+
+					dated, _ := b.BundleNameDated(meta)
+					latest, _ := b.BundleNameLatest(meta)
+
+					abs_dated := filepath.Join(*dest, dated)
+					abs_latest := filepath.Join(*dest, latest)
+
+					dated_compressed, _ := compress.CompressedBundlePath(abs_dated)
+					latest_compressed, _ := compress.CompressedBundlePath(abs_latest)
+
+					dated_hash := hash.HashFilePath(dated_compressed)
+					latest_hash := hash.HashFilePath(latest_compressed)
+
+					wg.Add(1)
+
+					go func() {
+
+						defer wg.Done()
+
+						err = Clone(dated_compressed, latest_compressed)
+
+						if err != nil {
+							logger.Fatal("failed to clone %s to %s, because %s", dated_compressed, latest_compressed, err)
+						}
+
+						err = Clone(dated_hash, latest_hash)
+
+						if err != nil {
+							logger.Fatal("failed to clone %s to %s, because %s", dated_hash, latest_hash, err)
+						}
+
+						logger.Status("finished cloning %s to %s", dated_compressed, latest_compressed)
+					}()
 				}
 
 				tb := time.Since(ta)
 				logger.Status("finished bundling %s in %v", metafile, tb)
 			}
+
+			wg.Wait()
 
 			t2 := time.Since(t1)
 			logger.Status("finished bundling metafiles in %s in %v", abs_repo, t2)
@@ -302,4 +346,31 @@ func main() {
 	}
 
 	os.Exit(0)
+}
+
+func Clone(src string, dest string) error {
+
+	src_fh, err := os.Open(src)
+
+	if err != nil {
+		return err
+	}
+
+	defer src_fh.Close()
+
+	dest_fh, err := atomicfile.New(dest, 0644)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(dest_fh, src_fh)
+
+	if err != nil {
+		dest_fh.Abort()
+		return err
+	}
+
+	dest_fh.Close()
+	return nil
 }
