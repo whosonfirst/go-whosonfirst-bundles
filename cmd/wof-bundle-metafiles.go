@@ -44,6 +44,7 @@ func main() {
 	var compress_bundle = flag.Bool("compress", false, "...")
 	var dated = flag.Bool("dated", false, "...")
 	var latest = flag.Bool("latest", false, "...")
+	var strict = flag.Bool("strict", false, "...")
 
 	var skip_existing = flag.Bool("skip-existing", false, "Skip existing files on disk (without checking for remote changes)")
 	var force = flag.Bool("force", false, "Force updates to files (regardless of whether a metafile has changed)")
@@ -76,7 +77,14 @@ func main() {
 			abs_repo, err := filepath.Abs(path)
 
 			if err != nil {
-				logger.Fatal("failed to make absolute path for %s, because %s", path, err)
+
+				if *strict {
+					logger.Fatal("failed to make absolute path for %s, because %s", path, err)
+				}
+
+				logger.Fatal("SKIP failed to make absolute path for %s, because %s", path, err)
+				continue
+
 			}
 
 			abs_meta := filepath.Join(abs_repo, "meta")
@@ -84,7 +92,13 @@ func main() {
 			_, err = os.Stat(abs_meta)
 
 			if os.IsNotExist(err) {
-				logger.Fatal("meta directory %s is missing", abs_meta)
+
+				if *strict {
+					logger.Fatal("meta directory %s is missing", abs_meta)
+				}
+
+				logger.Warning("SKIP meta directory %s is missing", abs_meta)
+				continue
 			}
 
 			abs_data := filepath.Join(abs_repo, "data")
@@ -92,7 +106,13 @@ func main() {
 			_, err = os.Stat(abs_data)
 
 			if os.IsNotExist(err) {
-				logger.Fatal("data directory %s is missing", abs_data)
+
+				if *strict {
+					logger.Fatal("data directory %s is missing", abs_data)
+				}
+
+				logger.Warning("SKIP data directory %s is missing", abs_data)
+				continue
 			}
 
 			metafiles := make([]string, 0)
