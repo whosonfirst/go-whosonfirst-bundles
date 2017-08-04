@@ -39,6 +39,7 @@ func main() {
 
 	var compress_bundle = flag.Bool("compress", false, "...")
 	var dated = flag.Bool("dated", false, "...")
+	var latest = flag.Bool("latest", false, "...")
 
 	var skip_existing = flag.Bool("skip-existing", false, "Skip existing files on disk (without checking for remote changes)")
 	var force = flag.Bool("force", false, "Force updates to files (regardless of whether a metafile has changed)")
@@ -55,6 +56,14 @@ func main() {
 	logger := log.NewWOFLogger("wof-bundle-metafiles")
 	logger.AddLogger(stdout, *loglevel)
 	logger.AddLogger(stderr, "error")
+
+	if *latest && !*compress_bundle {
+		logger.Fatal("-latest flag passed without -compress flag")
+	}
+
+	if *latest && !*dated {
+		logger.Fatal("-latest flag passed without -dated flag")
+	}
 
 	if *mode == "repo" {
 
@@ -117,6 +126,9 @@ func main() {
 					continue
 				}
 			}
+
+			// please put me in bundles.go or bundles/metafile.go or something
+			// https://github.com/whosonfirst/go-whosonfirst-bundles/issues/3
 
 			for _, fname := range metafiles {
 
@@ -279,7 +291,7 @@ func main() {
 
 				bi.MetafileCompressedHashPath = sha1_metafile_path
 
-				if *dated && *compress_bundle {
+				if *dated && *compress_bundle && *latest {
 
 					meta := bi.MetafilePath
 
@@ -299,6 +311,8 @@ func main() {
 
 					go func() {
 
+						c1 := time.Now()
+
 						defer wg.Done()
 
 						err = Clone(dated_compressed, latest_compressed)
@@ -313,7 +327,9 @@ func main() {
 							logger.Fatal("failed to clone %s to %s, because %s", dated_hash, latest_hash, err)
 						}
 
-						logger.Status("finished cloning %s to %s", dated_compressed, latest_compressed)
+						c2 := time.Since(c1)
+
+						logger.Status("finished cloning %s to %s in %v", dated_compressed, latest_compressed, c2)
 					}()
 				}
 
