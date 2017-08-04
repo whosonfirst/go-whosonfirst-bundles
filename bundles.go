@@ -26,6 +26,19 @@ type BundleOptions struct {
 	Logger       *log.WOFLogger
 }
 
+type BundleInfo struct {
+	MetafilePath               string
+	MetafileHashPath           string
+	MetafileHash               string
+	MetafileCompressedPath     string
+	MetafileCompressedHashPath string
+	MetafileCompressedHash     string
+	BundlePath                 string
+	BundleCompressedPath       string
+	BundleCompressedHashPath   string
+	BundleCompressedHash       string
+}
+
 type Bundle struct {
 	Options *BundleOptions
 }

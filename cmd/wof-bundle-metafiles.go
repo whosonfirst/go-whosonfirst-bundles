@@ -32,19 +32,6 @@ import (
 	"time"
 )
 
-type BundleInfo struct {
-	MetafilePath               string
-	MetafileHashPath           string
-	MetafileHash               string
-	MetafileCompressedPath     string
-	MetafileCompressedHashPath string
-	MetafileCompressedHash     string
-	BundlePath                 string
-	BundleCompressedPath       string
-	BundleCompressedHashPath   string
-	BundleCompressedHash       string
-}
-
 func main() {
 
 	var dest = flag.String("dest", "", "Where to write files")
@@ -164,7 +151,7 @@ func main() {
 
 				// work in progres...
 
-				bi := BundleInfo{
+				bi := bundles.BundleInfo{
 					MetafilePath:               "",
 					MetafileHashPath:           "",
 					MetafileCompressedPath:     "",
