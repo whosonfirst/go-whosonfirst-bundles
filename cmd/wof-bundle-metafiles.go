@@ -1,14 +1,18 @@
 package main
 
 // For example:
-// bin/wof-bundle-metafiles -dest /usr/local/data/bundles -compress /usr/local/data/whosonfirst-data
+
+// PLEASE WRITE ME...
+// "prune /usr/local/data/bundles"
+
+// And then:
+// bin/wof-bundle-metafiles -dest /usr/local/data/bundles -compress -dated -latest /usr/local/data/whosonfirst-data
 
 // And then:
 // aws s3 --region us-east-1 sync /usr/local/data/bundles/ s3://whosonfirst.mapzen.com/bundles/
 
 // And then for bonus points:
 // utils/bundles3-prune-dated whosonfirst.mapzen.com us-east-1
-// utils/bundles3-latest-to-dated whosonfirst.mapzen.com us-east-1
 // utils/bundles3-index whosonfirst.mapzen.com us-east-1
 
 // See also:
