@@ -74,15 +74,18 @@ func (b *Bundle) BundleName(metafile string) (string, error) {
 		bundle_name = strings.Replace(bundle_name, "-meta", "", -1)
 		bundle_name = strings.Replace(bundle_name, "-latest", "", -1)
 
-		bundle_name = fmt.Sprintf("%s-latest-bundle", bundle_name)
-	}
+		if opts.Dated {
 
-	if opts.Dated {
+			ts := time.Now()
+			ymd := ts.Format("20060102T150405") // Go... Y U so weird
 
-		ts := time.Now()
-		ymd := ts.Format("20060102") // Go... Y U so weird
+			bundle_name = fmt.Sprintf("%s-%s-bundle", bundle_name, ymd)
 
-		bundle_name = fmt.Sprintf("%s-%s-bundle", bundle_name, ymd)
+		} else {
+
+			bundle_name = fmt.Sprintf("%s-latest-bundle", bundle_name)
+		}
+
 	}
 
 	return bundle_name, nil
