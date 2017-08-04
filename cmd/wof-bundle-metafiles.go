@@ -30,6 +30,19 @@ import (
 	"time"
 )
 
+type BundleInfo struct {
+	MetafilePath               string
+	MetafileHashPath           string
+	MetafileHash               string
+	MetafileCompressedPath     string
+	MetafileCompressedHashPath string
+	MetafileCompressedHash     string
+	BundlePath                 string
+	BundleCompressedPath       string
+	BundleCompressedHashPath   string
+	BundleCompressedHash       string
+}
+
 func main() {
 
 	var dest = flag.String("dest", "", "Where to write files")
@@ -141,9 +154,27 @@ func main() {
 					logger.Fatal("failed to determined compressed path for %s, because %s", metafile, err)
 				}
 
-				if !*force {
+				// work in progres...
 
-					sha1_path := hash.HashFilePath(compressed_metafile_path)
+				bi := BundleInfo{
+					MetafilePath:               "",
+					MetafileHashPath:           "",
+					MetafileCompressedPath:     "",
+					MetafileCompressedHashPath: "",
+					MetafileHash:               "",
+					BundlePath:                 "",
+					BundleCompressedPath:       "",
+					BundleCompressedHashPath:   "",
+					BundleCompressedHash:       "",
+				}
+
+				sha1_path := hash.HashFilePath(compressed_metafile_path)
+
+				bi.MetafilePath = metafile
+				bi.MetafileCompressedPath = compressed_metafile_path
+				bi.MetafileCompressedHashPath = sha1_path
+
+				if !*force {
 
 					_, err = os.Stat(sha1_path)
 
@@ -169,6 +200,8 @@ func main() {
 						if err != nil {
 							logger.Fatal("failed to hash metafile %s, because %s", compressed_metafile_path, err)
 						}
+
+						bi.MetafileCompressedHash = current_hash
 
 						logger.Debug("last hash (%s) is %s", sha1_path, last_hash)
 						logger.Debug("last hash (%s) is %s", metafile, current_hash)
@@ -203,7 +236,7 @@ func main() {
 					logger.Fatal("failed to bundle metafile %s, because %s", metafile, err)
 				}
 
-				logger.Info("%s", bundle_path)
+				bi.BundlePath = bundle_path
 
 				if *compress_bundle {
 
@@ -218,14 +251,15 @@ func main() {
 						logger.Fatal("failed to compress bundle %s, because %s", bundle_path, err)
 					}
 
+					bi.BundleCompressedPath = compressed_bundle_path
+
 					sha1_bundle_path, err := hash.WriteHashFile(compressed_bundle_path)
 
 					if err != nil {
 						logger.Fatal("failed to write hash file for %s, because %s", compressed_bundle_path, err)
 					}
 
-					logger.Info(compressed_bundle_path)
-					logger.Info(sha1_bundle_path)
+					bi.BundleCompressedHashPath = sha1_bundle_path
 				}
 
 				_, err = os.Stat(compressed_metafile_path)
@@ -238,6 +272,8 @@ func main() {
 					if err != nil {
 						logger.Fatal("failed to compresse metafile %s, because %s", metafile, err)
 					}
+
+					bi.MetafileCompressedPath = compressed_metafile_path
 				}
 
 				sha1_metafile_path, err := hash.WriteHashFile(compressed_metafile_path)
@@ -246,7 +282,11 @@ func main() {
 					logger.Fatal("failed to write hash file for %s, because %s", compressed_metafile_path, err)
 				}
 
-				logger.Info("%s (%s)", compressed_metafile_path, sha1_metafile_path)
+				bi.MetafileCompressedHashPath = sha1_metafile_path
+
+				if opts.Dated {
+					// copy DATED to latest
+				}
 
 				tb := time.Since(ta)
 				logger.Status("finished bundling %s in %v", metafile, tb)
