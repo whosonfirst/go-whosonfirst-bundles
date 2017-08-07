@@ -24,10 +24,10 @@ func main() {
 	// list all the files and to prune anything with more than
 	// x instances (20170807/thisisaaronland)
 
+	var max_bundles = flag.Int("max-bundles", 2, "...")
 	var bucket = flag.String("bucket", "", "...")
 	var prefix = flag.String("prefix", "", "...")
 	var region = flag.String("region", "us-east-1", "...")
-	var max_bundles = flag.Int("max-bundles", 2, "...")
 
 	var debug = flag.Bool("debug", false, "...")
 

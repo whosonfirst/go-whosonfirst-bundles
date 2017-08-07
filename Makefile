@@ -14,9 +14,11 @@ self:   prep
 	mkdir -p src/github.com/whosonfirst/go-whosonfirst-bundles/
 	mkdir -p src/github.com/whosonfirst/go-whosonfirst-bundles/compress
 	mkdir -p src/github.com/whosonfirst/go-whosonfirst-bundles/hash
+	mkdir -p src/github.com/whosonfirst/go-whosonfirst-bundles/prune
 	cp *.go src/github.com/whosonfirst/go-whosonfirst-bundles/
 	cp hash/*.go src/github.com/whosonfirst/go-whosonfirst-bundles/hash/
 	cp compress/*.go src/github.com/whosonfirst/go-whosonfirst-bundles/compress/
+	cp prune/*.go src/github.com/whosonfirst/go-whosonfirst-bundles/prune/
 	cp -r vendor/src/* src/
 
 deps:   rmdeps
@@ -38,8 +40,10 @@ fmt:
 	go fmt compress/*.go
 	go fmt cmd/*.go
 	go fmt hash/*.go
+	go fmt prune/*.go
 
 bin:	self
 	@GOPATH=$(GOPATH) go build -o bin/wof-bundle-metafiles cmd/wof-bundle-metafiles.go
+	@GOPATH=$(GOPATH) go build -o bin/wof-bundles-prune cmd/wof-bundles-prune.go
 	@GOPATH=$(GOPATH) go build -o bin/wof-bundles-prune-local cmd/wof-bundles-prune-local.go
 	@GOPATH=$(GOPATH) go build -o bin/wof-bundles-prune-remote cmd/wof-bundles-prune-remote.go
