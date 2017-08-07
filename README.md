@@ -14,6 +14,15 @@ All of this package's dependencies are bundled with the code in the `vendor` dir
 
 ## Tools
 
+For example:
+
+```
+./bin/wof-prune-bundles -remote -bucket whosonfirst.mapzen.com -prefix bundles -max-bundles 10
+./bin/wof-prune-bundles -root /usr/local/data/bundles -max-bundles 10
+./bin/wof-bundle-metafiles -dated -latest -compress -dest /usr/local/data/bundles /usr/local/data/whosonfirst-data
+aws s3 sync --region us-east-1 /usr/local/data/bundles s3://whosonfirst.mapzen.com/bundles/
+```
+
 ### wof-bundle-metafiles
 
 _Please write me._
@@ -22,6 +31,10 @@ _Please write me._
 ./bin/wof-bundle-metafiles -source file:///usr/local/data/whosonfirst-data-venue-lagov/data -name 3co-venue-lagov -dated -dest ./ -compress /usr/local/data/whosonfirst-data-venue-lagov/meta/wof-whosonfirst-data-venue-lagov-latest.csv
 2017/07/18 19:22:19 /usr/local/mapzen/go-whosonfirst-bundles/3co-venue-lagov-20170718.tar.bz2
 ```
+
+### wof-prune-bundles
+
+_Please write me._
 
 ## See also
 

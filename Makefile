@@ -44,4 +44,4 @@ fmt:
 
 bin:	self
 	@GOPATH=$(GOPATH) go build -o bin/wof-bundle-metafiles cmd/wof-bundle-metafiles.go
-	@GOPATH=$(GOPATH) go build -o bin/wof-bundles-prune cmd/wof-bundles-prune.go
+	@GOPATH=$(GOPATH) go build -o bin/wof-prune-bundles cmd/wof-prune-bundles.go
