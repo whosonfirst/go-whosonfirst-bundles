@@ -20,6 +20,7 @@ self:   prep
 	cp -r vendor/src/* src/
 
 deps:   rmdeps
+	@GOPATH=$(GOPATH) go get -u "github.com/aws/aws-sdk-go"
 	@GOPATH=$(GOPATH) go get -u "github.com/facebookgo/atomicfile"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-clone"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-hash"
@@ -40,3 +41,5 @@ fmt:
 
 bin:	self
 	@GOPATH=$(GOPATH) go build -o bin/wof-bundle-metafiles cmd/wof-bundle-metafiles.go
+	@GOPATH=$(GOPATH) go build -o bin/wof-bundles-prune-local cmd/wof-bundles-prune-local.go
+	@GOPATH=$(GOPATH) go build -o bin/wof-bundles-prune-remote cmd/wof-bundles-prune-remote.go
