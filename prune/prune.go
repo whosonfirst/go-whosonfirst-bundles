@@ -1,6 +1,7 @@
 package prune
 
 import (
+	"path/filepath"
 	"regexp"
 )
 
@@ -41,6 +42,7 @@ func FilesToCandidates(files []File, opts *PruneOptions) (Candidates, error) {
 	for _, file := range files {
 
 		fname := file.Name()
+		fname = filepath.Base(fname)
 
 		if !re_bundle.MatchString(fname) {
 			continue

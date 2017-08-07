@@ -45,5 +45,3 @@ fmt:
 bin:	self
 	@GOPATH=$(GOPATH) go build -o bin/wof-bundle-metafiles cmd/wof-bundle-metafiles.go
 	@GOPATH=$(GOPATH) go build -o bin/wof-bundles-prune cmd/wof-bundles-prune.go
-	@GOPATH=$(GOPATH) go build -o bin/wof-bundles-prune-local cmd/wof-bundles-prune-local.go
-	@GOPATH=$(GOPATH) go build -o bin/wof-bundles-prune-remote cmd/wof-bundles-prune-remote.go

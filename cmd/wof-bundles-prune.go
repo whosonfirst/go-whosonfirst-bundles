@@ -42,6 +42,7 @@ func main() {
 		pruner = pr
 
 	} else {
+
 		pr, err := prune.NewLocalPruner(*root, opts)
 
 		if err != nil {

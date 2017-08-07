@@ -3,6 +3,7 @@ package prune
 import (
 	"github.com/whosonfirst/go-whosonfirst-bundles/hash"
 	"io/ioutil"
+	_ "log"
 	"os"
 	"path/filepath"
 )
@@ -15,20 +16,20 @@ type LocalPruner struct {
 
 type LocalFile struct {
 	File
-	f os.FileInfo
+	info os.FileInfo
 }
 
-func NewLocalFile(f os.FileInfo) (File, error) {
+func NewLocalFile(info os.FileInfo) (File, error) {
 
 	file := LocalFile{
-		f: f,
+		info: info,
 	}
 
 	return &file, nil
 }
 
 func (f *LocalFile) Name() string {
-	return f.Name()
+	return f.info.Name()
 }
 
 func NewLocalPruner(root string, opts *PruneOptions) (Pruner, error) {
@@ -73,9 +74,17 @@ func (p *LocalPruner) PruneFiles(files []File) error {
 		return err
 	}
 
+	/*
+		for name, files := range candidates {
+			log.Println(name, len(files))
+		}
+	*/
+
 	max_bundles := p.Options.MaxBundles
 
 	for _, files := range candidates {
+
+		// log.Println(name, len(files))
 
 		if len(files) <= max_bundles {
 			continue

@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/whosonfirst/go-whosonfirst-bundles/hash"
+	_ "log"
 )
 
 type RemotePruner struct {
@@ -96,6 +97,12 @@ func (p *RemotePruner) PruneFiles(files []File) error {
 	if err != nil {
 		return err
 	}
+
+	/*
+		for name, files := range candidates {
+		    log.Println(name, len(files))
+		}
+	*/
 
 	max_bundles := p.Options.MaxBundles
 
