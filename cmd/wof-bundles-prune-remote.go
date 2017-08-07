@@ -7,12 +7,17 @@ import (
 	// "github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/whosonfirst/go-whosonfirst-bundles/hash"
 	"log"
+	"os"
 	"path/filepath"
 	"regexp"
 )
 
 func main() {
+
+	// this name is a bit of a misnomer - it's really about
+	// pruning _dated_ bundles (20170807/thisisaaronland)
 
 	// please reconcile me with wof-bundles-prune-local
 	// probably something like a interface for bundle source to
@@ -81,21 +86,43 @@ func main() {
 		lookup[short_name] = append(lookup[short_name], file)
 	}
 
-	for short_name, bundles := range lookup {
-
-		log.Println(short_name, len(bundles))
+	for _, bundles := range lookup {
 
 		if len(bundles) <= *max_bundles {
 			continue
 		}
 
-		for _, f := range bundles {
-			log.Println(short_name, f.Key)
-		}
+		for c := len(bundles); c > *max_bundles; c-- {
 
-		if *debug {
-			continue
+			b := bundles[0]
+			fname := b.Key
+
+			bundle_path := *fname
+			bundle_hash := hash.HashFilePath(bundle_path)
+
+			to_remove := []string{bundle_path, bundle_hash}
+
+			for _, path := range to_remove {
+
+				log.Println("REMOVE", path)
+
+				if *debug {
+					continue
+				}
+
+				input := &s3.DeleteObjectInput{
+					Bucket: aws.String(*bucket),
+					Key:    aws.String(path),
+				}
+
+				_, err := svc.DeleteObject(input)
+
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
 		}
 	}
 
+	os.Exit(0)
 }

@@ -2,17 +2,18 @@ package main
 
 import (
 	"flag"
-	_ "fmt"
 	"github.com/whosonfirst/go-whosonfirst-bundles/hash"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
-	// "sort"
 )
 
 func main() {
+
+	// this name is a bit of a misnomer - it's really about
+	// pruning _dated_ bundles (20170807/thisisaaronland)
 
 	// please reconcile me with wof-bundles-prune-remote
 	// probably something like a interface for bundle source to
