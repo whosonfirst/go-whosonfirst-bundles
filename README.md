@@ -17,10 +17,30 @@ All of this package's dependencies are bundled with the code in the `vendor` dir
 For example:
 
 ```
-./bin/wof-prune-bundles -remote -bucket whosonfirst.mapzen.com -prefix bundles -max-bundles 10
-./bin/wof-prune-bundles -root /usr/local/data/bundles -max-bundles 10
-./bin/wof-bundle-metafiles -dated -latest -compress -dest /usr/local/data/bundles /usr/local/data/whosonfirst-data
-aws s3 sync --region us-east-1 /usr/local/data/bundles s3://whosonfirst.mapzen.com/bundles/
+#!/bin/sh
+
+BUNDLE_TOOL="/usr/local/bin/go-whosonfirst-bundles/bin/wof-bundle-metafiles"
+PRUNE_TOOL="/usr/local/bin/go-whosonfirst-bundles/bin/wof-prune-bundles"
+
+BUCKET="whosonfirst.mapzen.com"
+PREFIX="bundles"
+REGION="us-east-1"
+
+BUNDLES="/usr/local/data/bundles"
+
+# by default limits each metafile to 10 bundles (wof-county-20170702, wof-county-20170703 and so on)
+
+${PRUNE_TOOL} -root ${BUNDLES}
+${PRUNE_TOOL} -remote -bucket ${BUCKET} -prefix ${PREFIX} -region ${REGION}
+
+for REPO in $@
+do
+    ${BUNDLE_TOOL} -dated -latest -compress -dest ${BUNDLES} ${REPO}
+done
+
+aws s3 sync --region ${REGION} ${BUNDLES} s3://${BUCKET}/${PREFIX}/
+exit 0
+
 ```
 
 ### wof-bundle-metafiles
