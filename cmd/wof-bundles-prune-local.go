@@ -3,10 +3,13 @@ package main
 import (
 	"flag"
 	_ "fmt"
+	"github.com/whosonfirst/go-whosonfirst-bundles/hash"
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
+	// "sort"
 )
 
 func main() {
@@ -16,7 +19,7 @@ func main() {
 	// list all the files and to prune anything with more than
 	// x instances (20170807/thisisaaronland)
 
-	var root = flag.String("", "", "...")
+	var root = flag.String("root", "", "...")
 	var max_bundles = flag.Int("max-bundles", 2, "...")
 
 	var debug = flag.Bool("debug", false, "...")
@@ -74,20 +77,48 @@ func main() {
 		lookup[short_name] = append(lookup[short_name], file)
 	}
 
-	for short_name, bundles := range lookup {
-
-		log.Println(short_name, len(bundles))
+	for _, bundles := range lookup {
 
 		if len(bundles) <= *max_bundles {
 			continue
 		}
 
-		for _, f := range bundles {
-			log.Println(short_name, f.Name())
+		for c := len(bundles); c > *max_bundles; c-- {
+
+			b := bundles[0]
+			fname := b.Name()
+
+			bundle_path := filepath.Join(*root, fname)
+			bundle_hash := hash.HashFilePath(bundle_path)
+
+			to_remove := []string{bundle_path, bundle_hash}
+
+			for _, path := range to_remove {
+
+				log.Println("REMOVE", path)
+
+				if *debug {
+					continue
+				}
+
+				_, err := os.Stat(path)
+
+				if os.IsNotExist(err) {
+					continue
+				}
+
+				err = os.Remove(path)
+
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
 		}
 
-		if *debug {
-			continue
+		if len(bundles) > 1 {
+			bundles = bundles[1:]
 		}
 	}
+
+	os.Exit(0)
 }
