@@ -1,6 +1,9 @@
 package prune
 
 import (
+	"fmt"
+	"log"
+	"os"
 	"path/filepath"
 	"regexp"
 )
@@ -20,14 +23,27 @@ type PruneOptions struct {
 	Debug      bool
 	Dated      bool
 	MaxBundles int
+	Logger     *log.Logger // maybe use go-whosonfirst-log... I don't know yet
 }
 
 func NewDefaultPruneOptions() (*PruneOptions, error) {
+
+	ex, err := os.Executable()
+
+	if err != nil {
+		return nil, err
+	}
+
+	app := filepath.Base(ex)
+	prefix := fmt.Sprintf("[%s] ", app)
+
+	logger := log.New(os.Stdout, prefix, log.Lshortfile)
 
 	opts := PruneOptions{
 		Debug:      false,
 		Dated:      true,
 		MaxBundles: 10,
+		Logger:     logger,
 	}
 
 	return &opts, nil

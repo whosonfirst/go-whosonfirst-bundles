@@ -74,19 +74,12 @@ func (p *LocalPruner) PruneFiles(files []File) error {
 		return err
 	}
 
-	/*
-		for name, files := range candidates {
-			log.Println(name, len(files))
-		}
-	*/
-
 	max_bundles := p.Options.MaxBundles
 
-	for _, files := range candidates {
-
-		// log.Println(name, len(files))
+	for short_name, files := range candidates {
 
 		if len(files) <= max_bundles {
+			p.Options.Logger.Printf("SKIP %s, does not exceed max bundles\n", short_name)
 			continue
 		}
 
@@ -102,7 +95,10 @@ func (p *LocalPruner) PruneFiles(files []File) error {
 
 			for _, path := range to_remove {
 
+				p.Options.Logger.Printf("PRUNE local file %s\n", path)
+
 				if p.Options.Debug {
+					p.Options.Logger.Printf("SKIP pruning local file %s, because debugging is enabled\n", path)
 					continue
 				}
 

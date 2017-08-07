@@ -98,17 +98,12 @@ func (p *RemotePruner) PruneFiles(files []File) error {
 		return err
 	}
 
-	/*
-		for name, files := range candidates {
-		    log.Println(name, len(files))
-		}
-	*/
-
 	max_bundles := p.Options.MaxBundles
 
-	for _, files := range candidates {
+	for short_name, files := range candidates {
 
 		if len(files) <= max_bundles {
+			p.Options.Logger.Printf("SKIP %s, does not exceed max bundles\n", short_name)
 			continue
 		}
 
@@ -124,7 +119,10 @@ func (p *RemotePruner) PruneFiles(files []File) error {
 
 			for _, path := range to_remove {
 
+				p.Options.Logger.Printf("PRUNE remote file %s%s\n", p.Bucket, path)
+
 				if p.Options.Debug {
+					p.Options.Logger.Printf("SKIP pruning remote file %s, because debugging is enabled\n", path)
 					continue
 				}
 
