@@ -21,6 +21,7 @@ For example:
 
 BUNDLE_TOOL="/usr/local/bin/go-whosonfirst-bundles/bin/wof-bundle-metafiles"
 PRUNE_TOOL="/usr/local/bin/go-whosonfirst-bundles/bin/wof-prune-bundles"
+INDEX_TOOL="/usr/local/bin/go-whosonfirst-bundles/utils/bundles3-index"
 
 BUCKET="whosonfirst.mapzen.com"
 PREFIX="bundles"
@@ -39,8 +40,9 @@ do
 done
 
 aws s3 sync --region ${REGION} ${BUNDLES} s3://${BUCKET}/${PREFIX}/
-exit 0
 
+${INDEX_TOOL} ${BUCKET} ${REGION}
+exit 0
 ```
 
 ### wof-bundle-metafiles

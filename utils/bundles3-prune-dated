@@ -1,6 +1,9 @@
 #!/bin/sh
 # -*-shell-*-
 
+echo "This has been left here as a reference but you should really use go-whosonfirst-bundles/bin/wof-prune-bundles"
+exit 1
+
 BUCKET=$1
 REGION=$2
 
