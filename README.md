@@ -39,7 +39,7 @@ do
     ${BUNDLE_TOOL} -dated -latest -compress -dest ${BUNDLES} ${REPO}
 done
 
-aws s3 sync --region ${REGION} ${BUNDLES} s3://${BUCKET}/${PREFIX}/
+aws s3 sync --region ${REGION} --exclude "*" --include "*.bz2" --include "*.sha1.txt" ${BUNDLES} s3://${BUCKET}/${PREFIX}/
 
 ${INDEX_TOOL} ${BUCKET} ${REGION}
 exit 0
