@@ -13,17 +13,22 @@ self:   prep
 	if test -d src; then rm -rf src; fi
 	mkdir -p src/github.com/whosonfirst/go-whosonfirst-bundles
 	cp *.go src/github.com/whosonfirst/go-whosonfirst-bundles/
-	cp -r hash src/github.com/whosonfirst/go-whosonfirst-bundles/
-	cp -r compress src/github.com/whosonfirst/go-whosonfirst-bundles/
 	cp -r vendor/* src/
 
 deps:   rmdeps
 	@GOPATH=$(GOPATH) go get -u "github.com/facebookgo/atomicfile"
+	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-csv"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-index"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-geojson-v2"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-hash"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-log"
+	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-meta"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-uri"
+	rm -rf src/github.com/whosonfirst/go-whosonfirst-meta/vendor/github.com/whosonfirst/go-whosonfirst-csv
+	rm -rf src/github.com/whosonfirst/go-whosonfirst-meta/vendor/github.com/whosonfirst/go-whosonfirst-geojson-v2
+	rm -rf src/github.com/whosonfirst/go-whosonfirst-meta/vendor/github.com/whosonfirst/go-whosonfirst-index
+	rm -rf src/github.com/whosonfirst/go-whosonfirst-meta/vendor/github.com/whosonfirst/go-whosonfirst-log
+	rm -rf src/github.com/whosonfirst/go-whosonfirst-meta/vendor/github.com/whosonfirst/go-whosonfirst-uri
 
 vendor-deps: rmdeps deps
 	if test ! -d vendor; then mkdir vendor; fi
@@ -34,9 +39,7 @@ vendor-deps: rmdeps deps
 
 fmt:
 	go fmt *.go
-	go fmt compress/*.go
 	go fmt cmd/*.go
-	go fmt hash/*.go
 
 bin:	self
 	@GOPATH=$(GOPATH) go build -o bin/wof-bundle cmd/wof-bundle.go
