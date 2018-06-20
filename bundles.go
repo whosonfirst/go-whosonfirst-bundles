@@ -1,7 +1,7 @@
 package bundles
 
 import (
-       "context"
+	"context"
 	"errors"
 	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/feature"
@@ -158,7 +158,7 @@ func (b *Bundle) BundleRoot(metafile string) (string, error) {
 
 func (b *Bundle) BundleMetafile(metafile string) (string, error) {
 
-	opts := b.Options
+	// opts := b.Options
 
 	bundle_root, err := b.BundleRoot(metafile)
 
@@ -175,39 +175,43 @@ func (b *Bundle) BundleMetafile(metafile string) (string, error) {
 		}
 	}
 
-	bundle_fname := filepath.Base(bundle_root)
-	bundle_data := filepath.Join(bundle_root, "data")
+	// bundle_fname := filepath.Base(bundle_root)
+	// bundle_data := filepath.Join(bundle_root, "data")
 
 	cb := func(fh io.Reader, ctx context.Context, args ...interface{}) error {
 
 		/*
-		path, err := index.PathForContext(ctx)
+			path, err := index.PathForContext(ctx)
 
-		if err != nil {
-			return err
-		}
+			if err != nil {
+				return err
+			}
 		*/
 
 		f, err := feature.LoadFeatureFromReader(fh)
-		
+
 		if err != nil {
 			return err
 		}
 
 		id := whosonfirst.Id(f)
 
-		rel_path, err := uri.Id2RelPath(id)
+		_, err = uri.Id2RelPath(id)
 
 		if err != nil {
 			return err
 		}
 
-		
+		return nil
 	}
 
-	idx := index.NewIndexer("meta", cb)
+	idx, err := index.NewIndexer("meta", cb)
 
-	err := idx.IndexPath(metafile)
+	if err != nil {
+		return bundle_root, err
+	}
+	
+	err = idx.IndexPath(metafile)
 
 	if err != nil {
 		return bundle_root, err

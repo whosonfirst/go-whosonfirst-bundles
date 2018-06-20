@@ -40,4 +40,5 @@ fmt:
 
 bin:	self
 	@GOPATH=$(GOPATH) go build -o bin/wof-bundle-metafiles cmd/wof-bundle-metafiles.go
+	@GOPATH=$(GOPATH) go build -o bin/wof-bundle cmd/wof-bundle.go
 
