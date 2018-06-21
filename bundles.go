@@ -11,6 +11,8 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-index"
 	"github.com/whosonfirst/go-whosonfirst-log"
 	"github.com/whosonfirst/go-whosonfirst-meta"
+	"github.com/whosonfirst/go-whosonfirst-sqlite-features/tables"
+	"github.com/whosonfirst/go-whosonfirst-sqlite/database"
 	"github.com/whosonfirst/go-whosonfirst-uri"
 	"io"
 	"os"
@@ -28,6 +30,7 @@ type BundleOptions struct {
 
 type Bundle struct {
 	Options *BundleOptions
+	mu      *sync.Mutex
 }
 
 func DefaultBundleOptions() *BundleOptions {
@@ -47,11 +50,110 @@ func DefaultBundleOptions() *BundleOptions {
 
 func NewBundle(options *BundleOptions) (*Bundle, error) {
 
+	mu := new(sync.Mutex)
+
 	b := Bundle{
 		Options: options,
+		mu:      mu,
 	}
 
 	return &b, nil
+}
+
+func (b *Bundle) BundleMetafileFromSQLite(metafile string, db *database.SQLiteDatabase) error {
+
+	abs_metafile, err := filepath.Abs(metafile)
+
+	if err != nil {
+		return err
+	}
+
+	reader, err := csv.NewDictReaderFromPath(abs_metafile)
+
+	if err != nil {
+		return nil
+	}
+
+	conn, err := db.Conn()
+
+	if err != nil {
+		return err
+	}
+
+	defer db.Close()
+
+	tbl, err := tables.NewGeoJSONTable()
+
+	if err != nil {
+		return err
+	}
+
+	for {
+		row, err := reader.Read()
+
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			return err
+		}
+
+		str_id, ok := row["id"]
+
+		if !ok {
+			return errors.New("Missing ID")
+		}
+
+		id, err := strconv.ParseInt(str_id, 10, 64)
+
+		if err != nil {
+			return err
+		}
+
+		sql := fmt.Sprintf("SELECT body FROM %s WHERE id= ?", tbl.Name())
+
+		row := conn.QueryRow(id)
+
+		var body string
+		err = row.Scan(&body)
+
+		if err != nil {
+			return err
+		}
+
+		fh := strings.NewReader(body)
+
+		abs_path, err := b.ensurePathForID(b.Options.Destination, id)
+
+		if err != nil {
+			return nil
+		}
+
+		err = b.cloneFH(fh, abs_path)
+
+		if err != nil {
+			return err
+		}
+
+	}
+
+	fname := filepath.Base(abs_metafile)
+	cp_metafile := filepath.Join(b.Options.Destination, fname)
+
+	in, err := os.Open(abs_metafile)
+
+	if err != nil {
+		return err
+	}
+
+	err = b.cloneFH(in, cp_metafile)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (b *Bundle) BundleMetafile(metafile string) error {
@@ -124,8 +226,6 @@ func (b *Bundle) Bundle(to_index ...string) error {
 	var meta_writer *csv.DictWriter
 	var meta_fh *atomicfile.File
 
-	mu := new(sync.Mutex)
-
 	f := func(fh io.Reader, ctx context.Context, args ...interface{}) error {
 
 		path, err := index.PathForContext(ctx)
@@ -154,27 +254,10 @@ func (b *Bundle) Bundle(to_index ...string) error {
 
 		id := whosonfirst.Id(f)
 
-		abs_path, err := uri.Id2AbsPath(root, id)
+		abs_path, err := b.ensurePathForID(root, id)
 
 		if err != nil {
 			return nil
-		}
-
-		abs_root := filepath.Dir(abs_path)
-
-		_, err = os.Stat(abs_root)
-
-		if os.IsNotExist(err) {
-
-			mu.Lock()
-
-			err = os.MkdirAll(abs_root, 0755)
-
-			mu.Unlock()
-
-			if err != nil {
-				return err
-			}
 		}
 
 		err = b.cloneFH(fh, abs_path)
@@ -260,6 +343,34 @@ func (b *Bundle) Bundle(to_index ...string) error {
 	}
 
 	return nil
+}
+
+func (b *Bundle) ensurePathForID(root string, id int64) (string, error) {
+
+	abs_path, err := uri.Id2AbsPath(root, id)
+
+	if err != nil {
+		return "", err
+	}
+
+	abs_root := filepath.Dir(abs_path)
+
+	_, err = os.Stat(abs_root)
+
+	if os.IsNotExist(err) {
+
+		b.mu.Lock()
+
+		err = os.MkdirAll(abs_root, 0755)
+
+		b.mu.Unlock()
+
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return abs_path, nil
 }
 
 func (b *Bundle) cloneFH(in io.Reader, out_path string) error {
