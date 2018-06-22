@@ -1,12 +1,10 @@
 package main
 
-// MOST OF THIS CODE WILL MOVE IN TO bundle/*.go
-// (20180620/thisisaaronland)
-
 import (
 	"flag"
 	"github.com/whosonfirst/go-whosonfirst-bundles"
-	log "github.com/whosonfirst/go-whosonfirst-log"
+	"github.com/whosonfirst/go-whosonfirst-log"
+	"github.com/whosonfirst/go-whosonfirst-sqlite/database"
 	"io"
 	_ "log"
 	"os"
@@ -16,6 +14,9 @@ func main() {
 
 	var dest = flag.String("dest", "", "Where to write files")
 	var mode = flag.String("mode", "repo", "...")
+
+	var sqlite = flag.Bool("sqlite", false, "...")
+	var dsn = flag.String("sqlite-dsn", "", "...")
 
 	var loglevel = flag.String("loglevel", "status", "The level of detail for logging")
 	// var strict = flag.Bool("strict", false, "Exit (1) if any meta file fails cloning")
@@ -42,7 +43,20 @@ func main() {
 	}
 
 	to_index := flag.Args()
-	err = b.Bundle(to_index...)
+
+	if *sqlite {
+
+		db, err := database.NewDB(*dsn)
+
+		if err != nil {
+			logger.Fatal("Failed to open database because %s", err)
+		}
+
+		err = b.BundleMetafilesFromSQLite(db, to_index...)
+
+	} else {
+		err = b.Bundle(to_index...)
+	}
 
 	if err != nil {
 		logger.Fatal("Failed to create bundle because %s", err)
