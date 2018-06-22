@@ -11,13 +11,15 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-index"
 	"github.com/whosonfirst/go-whosonfirst-log"
 	"github.com/whosonfirst/go-whosonfirst-meta"
-	"github.com/whosonfirst/go-whosonfirst-sqlite-features/tables"
-	"github.com/whosonfirst/go-whosonfirst-sqlite/database"
+	"github.com/whosonfirst/go-whosonfirst-sqlite/database"	
+	"github.com/whosonfirst/go-whosonfirst-sqlite/tables"
 	"github.com/whosonfirst/go-whosonfirst-uri"
 	"io"
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
+	"strings"		
 	"sync"
 )
 
@@ -89,7 +91,7 @@ func (b *Bundle) BundleMetafileFromSQLite(metafile string, db *database.SQLiteDa
 	}
 
 	for {
-		row, err := reader.Read()
+		csv_row, err := reader.Read()
 
 		if err == io.EOF {
 			break
@@ -99,12 +101,16 @@ func (b *Bundle) BundleMetafileFromSQLite(metafile string, db *database.SQLiteDa
 			return err
 		}
 
-		str_id, ok := row["id"]
+		str_id, ok := csv_row["id"]
 
 		if !ok {
 			return errors.New("Missing ID")
 		}
 
+		// we could wait until after the DB query to do this but if
+		// it's going to fail maybe we want to know sooner...
+		// (20180622/thisisaaronland)
+		
 		id, err := strconv.ParseInt(str_id, 10, 64)
 
 		if err != nil {
@@ -113,10 +119,10 @@ func (b *Bundle) BundleMetafileFromSQLite(metafile string, db *database.SQLiteDa
 
 		sql := fmt.Sprintf("SELECT body FROM %s WHERE id= ?", tbl.Name())
 
-		row := conn.QueryRow(id)
+		db_row := conn.QueryRow(sql, id)
 
 		var body string
-		err = row.Scan(&body)
+		err = db_row.Scan(&body)
 
 		if err != nil {
 			return err
