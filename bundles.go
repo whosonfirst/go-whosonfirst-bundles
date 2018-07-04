@@ -11,8 +11,8 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-index"
 	"github.com/whosonfirst/go-whosonfirst-log"
 	"github.com/whosonfirst/go-whosonfirst-meta"
-	"github.com/whosonfirst/go-whosonfirst-sqlite/database"
 	"github.com/whosonfirst/go-whosonfirst-sqlite-features/tables"
+	"github.com/whosonfirst/go-whosonfirst-sqlite/database"
 	"github.com/whosonfirst/go-whosonfirst-uri"
 	"io"
 	"os"
@@ -65,7 +65,7 @@ func NewBundle(options *BundleOptions) (*Bundle, error) {
 // require context.Context or just add another function?
 // (20180622/thisisaaronland)
 
-func (b *Bundle) BundleMetafilesFromSQLite(db *database.SQLiteDatabase, metafiles ...string) error {
+func (b *Bundle) BundleMetafilesFromSQLite(dsn string, metafiles ...string) error {
 
 	done_ch := make(chan bool)
 	err_ch := make(chan error)
@@ -75,7 +75,7 @@ func (b *Bundle) BundleMetafilesFromSQLite(db *database.SQLiteDatabase, metafile
 
 	for _, path := range metafiles {
 
-		go func(b *Bundle, db *database.SQLiteDatabase, metafile string, done_ch chan bool, err_ch chan error) {
+		go func(b *Bundle, dsn string, metafile string, done_ch chan bool, err_ch chan error) {
 
 			defer func() {
 				done_ch <- true
@@ -86,14 +86,14 @@ func (b *Bundle) BundleMetafilesFromSQLite(db *database.SQLiteDatabase, metafile
 			case <-ctx.Done():
 				return
 			default:
-				err := b.BundleMetafileFromSQLite(ctx, db, path)
+				err := b.BundleMetafileFromSQLite(ctx, dsn, path)
 
 				if err != nil {
 					err_ch <- err
 				}
 			}
 
-		}(b, db, path, done_ch, err_ch)
+		}(b, dsn, path, done_ch, err_ch)
 	}
 
 	remaining := len(metafiles)
@@ -113,13 +113,21 @@ func (b *Bundle) BundleMetafilesFromSQLite(db *database.SQLiteDatabase, metafile
 	return nil
 }
 
-func (b *Bundle) BundleMetafileFromSQLite(ctx context.Context, db *database.SQLiteDatabase, metafile string) error {
+func (b *Bundle) BundleMetafileFromSQLite(ctx context.Context, dsn string, metafile string) error {
 
 	/*
-	     	defer func() {
-			b.Options.Logger.Status("Finished processing %s", metafile)
-		}()
+		     	defer func() {
+				b.Options.Logger.Status("Finished processing %s", metafile)
+			}()
 	*/
+
+	db, err := database.NewDB(dsn)
+
+	if err != nil {
+		return err
+	}
+
+	defer db.Close()
 
 	// is it worth wrapping all of this in a select / context block ?
 	// today it doesn't seem like it... (20180622/thisisaaronland)

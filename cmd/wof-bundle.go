@@ -4,7 +4,6 @@ import (
 	"flag"
 	"github.com/whosonfirst/go-whosonfirst-bundles"
 	"github.com/whosonfirst/go-whosonfirst-log"
-	"github.com/whosonfirst/go-whosonfirst-sqlite/database"
 	"io"
 	_ "log"
 	"os"
@@ -46,13 +45,7 @@ func main() {
 
 	if *sqlite {
 
-		db, err := database.NewDB(*dsn)
-
-		if err != nil {
-			logger.Fatal("Failed to open database because %s", err)
-		}
-
-		err = b.BundleMetafilesFromSQLite(db, to_index...)
+		err = b.BundleMetafilesFromSQLite(*dsn, to_index...)
 
 	} else {
 		err = b.Bundle(to_index...)
