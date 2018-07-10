@@ -62,32 +62,14 @@ func NewBundle(options *BundleOptions) (*Bundle, error) {
 	return &b, nil
 }
 
-func (o *BundleOptions) Clone() *BundleOptions {
+func (b *Bundle) BundleMetafilesFromSQLite(ctx context.Context, dsn string, metafiles ...string) error {
 
-	cl := BundleOptions{
-		Mode:        o.Mode,
-		Destination: o.Destination,
-		Metafile:    o.Metafile,
-		Logger:      o.Logger,
-	}
-
-	return &cl
-}
-
-// require context.Context or just add another function?
-// (20180622/thisisaaronland)
-
-func (b *Bundle) BundleMetafilesFromSQLite(dsn string, metafiles ...string) error {
-
-	done_ch := make(chan bool)
 	err_ch := make(chan error)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	done_ch := make(chan bool)
 
 	for _, path := range metafiles {
 
-		go func(b *Bundle, dsn string, metafile string, done_ch chan bool, err_ch chan error) {
+		go func(b *Bundle, ctx context.Context, dsn string, path string) {
 
 			defer func() {
 				done_ch <- true
@@ -99,38 +81,14 @@ func (b *Bundle) BundleMetafilesFromSQLite(dsn string, metafiles ...string) erro
 				return
 			default:
 
-				abs_path, err := filepath.Abs(path)
-
-				if err != nil {
-					err_ch <- err
-					return
-				}
-
-				fname := filepath.Base(abs_path)
-				ext := filepath.Ext(fname)
-				fname = strings.Replace(fname, ext, "", -1)
-
-				bundle_path := filepath.Join(b.Options.Destination, fname)
-
-				opts := b.Options.Clone()
-				opts.Destination = bundle_path
-
-				b2, err := NewBundle(opts)
-
-				if err != nil {
-					err_ch <- err
-					return
-				}
-				//
-
-				err = b2.BundleMetafileFromSQLite(ctx, dsn, path)
+				err := b.BundleMetafileFromSQLite(ctx, dsn, path)
 
 				if err != nil {
 					err_ch <- err
 				}
 			}
 
-		}(b, dsn, path, done_ch, err_ch)
+		}(b, ctx, dsn, path)
 	}
 
 	remaining := len(metafiles)

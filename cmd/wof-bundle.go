@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"github.com/whosonfirst/go-whosonfirst-bundles"
 	"github.com/whosonfirst/go-whosonfirst-log"
@@ -45,7 +46,10 @@ func main() {
 
 	if *sqlite {
 
-		err = b.BundleMetafilesFromSQLite(*dsn, to_index...)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		err = b.BundleMetafilesFromSQLite(ctx, *dsn, to_index...)
 
 	} else {
 		err = b.Bundle(to_index...)
