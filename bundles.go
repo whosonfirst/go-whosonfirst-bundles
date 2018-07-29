@@ -24,15 +24,17 @@ import (
 )
 
 type BundleOptions struct {
-	Mode        string
-	Destination string
-	Metafile    bool
-	Logger      *log.WOFLogger
+	Mode           string
+	Destination    string
+	Metafile       bool
+	Logger         *log.WOFLogger
+	MaxFileHandles int
 }
 
 type Bundle struct {
-	Options *BundleOptions
-	mu      *sync.Mutex
+	Options  *BundleOptions
+	mu       *sync.Mutex
+	throttle chan bool
 }
 
 func DefaultBundleOptions() *BundleOptions {
@@ -41,10 +43,11 @@ func DefaultBundleOptions() *BundleOptions {
 	logger := log.SimpleWOFLogger("")
 
 	opts := BundleOptions{
-		Mode:        "repo",
-		Destination: tmpdir,
-		Metafile:    true,
-		Logger:      logger,
+		Mode:           "repo",
+		Destination:    tmpdir,
+		Metafile:       true,
+		Logger:         logger,
+		MaxFileHandles: 100,
 	}
 
 	return &opts
@@ -52,11 +55,19 @@ func DefaultBundleOptions() *BundleOptions {
 
 func NewBundle(options *BundleOptions) (*Bundle, error) {
 
+	max_fh := options.MaxFileHandles
+	throttle_ch := make(chan bool, max_fh)
+
+	for i := 0; i < max_fh; i++ {
+		throttle_ch <- true
+	}
+
 	mu := new(sync.Mutex)
 
 	b := Bundle{
-		Options: options,
-		mu:      mu,
+		Options:  options,
+		mu:       mu,
+		throttle: throttle_ch,
 	}
 
 	return &b, nil
@@ -432,6 +443,12 @@ func (b *Bundle) ensurePathForID(root string, id int64) (string, error) {
 }
 
 func (b *Bundle) cloneFH(in io.Reader, out_path string) error {
+
+	<-b.throttle
+
+	defer func() {
+		b.throttle <- true
+	}()
 
 	b.Options.Logger.Debug("Clone file to %s", out_path)
 
