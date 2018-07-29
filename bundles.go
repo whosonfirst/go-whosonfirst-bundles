@@ -241,6 +241,8 @@ func (b *Bundle) BundleMetafileFromSQLite(ctx context.Context, dsn string, metaf
 		return err
 	}
 
+	defer in.Close()
+
 	err = b.cloneFH(in, cp_metafile)
 
 	if err != nil {
@@ -275,6 +277,8 @@ func (b *Bundle) BundleMetafile(metafile string) error {
 	if err != nil {
 		return err
 	}
+
+	defer in.Close()
 
 	err = b.cloneFH(in, cp_metafile)
 
@@ -461,7 +465,13 @@ func (b *Bundle) cloneFH(in io.Reader, out_path string) error {
 	_, err = io.Copy(out, in)
 
 	if err != nil {
-		out.Abort()
+
+		abort_err := out.Abort()
+
+		if abort_err != nil {
+			b.Options.Logger.Warning("Failed to remove atomicwrites file for %s, because %s", out_path, abort_err)
+		}
+
 		return err
 	}
 
