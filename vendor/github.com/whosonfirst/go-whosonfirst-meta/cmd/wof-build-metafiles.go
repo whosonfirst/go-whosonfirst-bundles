@@ -24,7 +24,8 @@ func main() {
 	str_roles := flag.String("roles", "", "Role-based filters are not supported yet.")
 	str_exclude := flag.String("exclude", "", "A comma-separated list of placetypes that meta files will not be created for.")
 
-	timings := flag.Bool("timings", false, "...")
+	old_skool := flag.Bool("old-skool", false, "Use old-skool wof-{PLACETYPE}-latest filenames")
+	timings := flag.Bool("timings", false, "Display status messages saying how long things are taking")
 
 	procs := flag.Int("processes", 0, "The number of concurrent processes to use. THIS FLAG HAS BEEN DEPRECATED")
 
@@ -84,6 +85,7 @@ func main() {
 	opts.Workdir = abs_root
 	opts.Timings = *timings
 	opts.MaxFilehandles = *limit
+	opts.OldSkool = *old_skool
 
 	paths := flag.Args()
 

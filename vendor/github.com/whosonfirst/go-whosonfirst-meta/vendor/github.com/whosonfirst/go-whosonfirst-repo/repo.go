@@ -3,12 +3,20 @@ package repo
 import (
 	"errors"
 	"fmt"
-	"github.com/whosonfirst/go-whosonfirst-placetypes"
+	_ "github.com/whosonfirst/go-whosonfirst-placetypes"
+	_ "log"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type Repo interface {
+	String() string
+	Name() string
+	ConcordancesFilename(*FilenameOptions) string
+	MetaFilename(*FilenameOptions) string
+	SQLiteFilename(*FilenameOptions) string
+	BundleFilename(*FilenameOptions) string
 }
 
 type DataRepo struct {
@@ -23,22 +31,24 @@ type DataRepo struct {
 
 type FilenameOptions struct {
 	Placetype string
-	StrictPlacetypes bool
-	Dated     bool
+	Suffix    string
+	Extension string
+	OldSkool  bool
 }
 
 func DefaultFilenameOptions() *FilenameOptions {
 
 	o := FilenameOptions{
 		Placetype: "",
-		Dated:     false,
-		StrictPlacetypes: false,
+		Suffix:    "latest",
+		Extension: "",
+		OldSkool:  false,
 	}
 
 	return &o
 }
 
-func NewDataRepoFromPath(path string, opts *FilenameOptions) (*DataRepo, error) {
+func NewDataRepoFromPath(path string) (*DataRepo, error) {
 
 	abs_path, err := filepath.Abs(path)
 
@@ -48,10 +58,10 @@ func NewDataRepoFromPath(path string, opts *FilenameOptions) (*DataRepo, error) 
 
 	repo := filepath.Base(abs_path)
 
-	return NewDataRepoFromString(repo, opts)
+	return NewDataRepoFromString(repo)
 }
 
-func NewDataRepoFromString(repo string, opts *FilenameOptions) (*DataRepo, error) {
+func NewDataRepoFromString(repo string) (*DataRepo, error) {
 
 	parts := strings.Split(repo, "-")
 
@@ -83,9 +93,11 @@ func NewDataRepoFromString(repo string, opts *FilenameOptions) (*DataRepo, error
 
 		placetype := parts[2]
 
-		if opts.StrictPlacetypes && !placetypes.IsValidPlacetype(placetype) {
-			return nil, errors.New("Invalid placetype")
-		}
+		/*
+			if opts.StrictPlacetypes && !placetypes.IsValidPlacetype(placetype) {
+				return nil, errors.New("Invalid placetype")
+			}
+		*/
 
 		r.Placetype = placetype
 	}
@@ -126,6 +138,10 @@ func NewDataRepoFromString(repo string, opts *FilenameOptions) (*DataRepo, error
 }
 
 func (r *DataRepo) String() string {
+	return r.Name()
+}
+
+func (r *DataRepo) Name() string {
 
 	parts := make([]string, 0)
 
@@ -153,90 +169,50 @@ func (r *DataRepo) String() string {
 
 func (r *DataRepo) MetaFilename(opts *FilenameOptions) string {
 
-	if opts.Placetype == "" {
-		if r.Placetype == "" {
-			opts.Placetype = "all"
-		} else {
-			opts.Placetype = r.Placetype
-		}
-	}
-
-	// not sure the template shouldn't just be rolled in here...
-	template := r.MetaFilenameTemplate()
-
-	return fmt.Sprintf(template, opts.Placetype)
-}
-
-func (r *DataRepo) MetaFilenameTemplate() string {
-
-	parts := make([]string, 0)
-
-	// unfortunately this is still-necessary legacy code...
-	// (20170726/thisisaaronland)
-
-	if r.Source == "whosonfirst" {
-		parts = append(parts, "wof")
-	} else {
-		parts = append(parts, r.Source)
-	}
-
-	parts = append(parts, "%s")
-
-	if r.Country != "" {
-		parts = append(parts, r.Country)
-	}
-
-	if r.Region != "" {
-		parts = append(parts, r.Region)
-	}
-
-	if r.Filter != "" {
-		parts = append(parts, r.Filter)
-	}
-
-	// unfortunately this is still-necessary legacy code - this
-	// should be removed when we stop including meta/* files in
-	// the WOF repos... (20170726/thisisaaronland)
-
-	if r.Source == "whosonfirst" {
-		parts = append(parts, "latest.csv")
-	} else {
-		parts = append(parts, "meta.csv")
-	}
-
-	return strings.Join(parts, "-")
+	opts.Extension = "csv"
+	return r.filename(opts)
 }
 
 func (r *DataRepo) ConcordancesFilename(opts *FilenameOptions) string {
 
-	if opts.Placetype == "" {
-		if r.Placetype == "" {
-			opts.Placetype = "all"
-		} else {
-			opts.Placetype = r.Placetype
-		}
-	}
+	opts.Suffix = "concordances"
+	opts.Extension = "csv"
 
-	// not sure the template shouldn't just be rolled in here...
-	template := r.ConcordancesFilenameTemplate()
-
-	return fmt.Sprintf(template, opts.Placetype)
+	return r.filename(opts)
 }
 
-func (r *DataRepo) ConcordancesFilenameTemplate() string {
+func (r *DataRepo) BundleFilename(opts *FilenameOptions) string {
+
+	opts.Extension = ""
+	return r.filename(opts)
+}
+
+func (r *DataRepo) SQLiteFilename(opts *FilenameOptions) string {
+
+	opts.Extension = "db"
+	return r.filename(opts)
+}
+
+func (r *DataRepo) filename(opts *FilenameOptions) string {
 
 	parts := make([]string, 0)
 
-	// unfortunately this is still-necessary legacy code...
-	// (20170726/thisisaaronland)
+	if r.Source == "whosonfirst" && opts.OldSkool {
 
-	if r.Source == "whosonfirst" {
 		parts = append(parts, "wof")
 	} else {
+
 		parts = append(parts, r.Source)
+		parts = append(parts, r.Role)
 	}
 
-	parts = append(parts, "%s")
+	if r.Placetype != "" {
+		parts = append(parts, r.Placetype)
+	}
+
+	if opts.Placetype != "" && opts.Placetype != r.Placetype {
+		parts = append(parts, opts.Placetype)
+	}
 
 	if r.Country != "" {
 		parts = append(parts, r.Country)
@@ -250,16 +226,24 @@ func (r *DataRepo) ConcordancesFilenameTemplate() string {
 		parts = append(parts, r.Filter)
 	}
 
-	// unfortunately this is still-necessary legacy code - this
-	// should be removed when we stop including meta/* files in
-	// the WOF repos... (20170726/thisisaaronland)
+	if opts.Suffix != "" {
 
-	if r.Source == "whosonfirst" {
-		parts = append(parts, "concordances")
-		parts = append(parts, "latest.csv")
-	} else {
-		parts = append(parts, "concordances.csv")
+		suffix := opts.Suffix
+
+		if opts.Suffix == "{DATED}" {
+
+			now := time.Now()
+			suffix = now.Format("20060102")
+		}
+
+		parts = append(parts, suffix)
 	}
 
-	return strings.Join(parts, "-")
+	fname := strings.Join(parts, "-")
+
+	if opts.Extension != "" {
+		fname = fmt.Sprintf("%s.%s", fname, opts.Extension)
+	}
+
+	return fname
 }

@@ -2,7 +2,24 @@
 // geohashes.
 package geohash
 
-import "math"
+import (
+	"math"
+)
+
+// Direction represents directions in the latitute/longitude space.
+type Direction int
+
+// Cardinal and intercardinal directions
+const (
+	North Direction = iota
+	NorthEast
+	East
+	SouthEast
+	South
+	SouthWest
+	West
+	NorthWest
+)
 
 // Encode the point (lat, lng) as a string geohash with the standard 12
 // characters of precision.
@@ -20,7 +37,12 @@ func EncodeWithPrecision(lat, lng float64, chars uint) string {
 }
 
 // EncodeInt encodes the point (lat, lng) to a 64-bit integer geohash.
-func EncodeInt(lat, lng float64) uint64 {
+func EncodeInt(lat, lng float64) uint64
+
+// encodeInt provides a Go implementation of integer geohash. This is the
+// default implementation of EncodeInt, but optimized versions are provided
+// for certain architectures.
+func encodeInt(lat, lng float64) uint64 {
 	latInt := encodeRange(lat, 90)
 	lngInt := encodeRange(lng, 180)
 	return interleave(latInt, lngInt)
@@ -77,10 +99,11 @@ func (b Box) Round() (lat, lng float64) {
 // errorWithPrecision returns the error range in latitude and longitude for in
 // integer geohash with bits of precision.
 func errorWithPrecision(bits uint) (latErr, lngErr float64) {
-	latBits := bits / 2
-	lngBits := bits - latBits
-	latErr = 180.0 / math.Exp2(float64(latBits))
-	lngErr = 360.0 / math.Exp2(float64(lngBits))
+	b := int(bits)
+	latBits := b / 2
+	lngBits := b - latBits
+	latErr = math.Ldexp(180.0, -latBits)
+	lngErr = math.Ldexp(360.0, -lngBits)
 	return
 }
 
@@ -117,6 +140,12 @@ func BoundingBoxInt(hash uint64) Box {
 func Decode(hash string) (lat, lng float64) {
 	box := BoundingBox(hash)
 	return box.Round()
+}
+
+// DecodeCenter decodes the string geohash to the central point of the bounding box.
+func DecodeCenter(hash string) (lat, lng float64) {
+	box := BoundingBox(hash)
+	return box.Center()
 }
 
 // DecodeIntWithPrecision decodes the provided integer geohash with bits of
@@ -190,6 +219,24 @@ func NeighborsIntWithPrecision(hash uint64, bits uint) []uint64 {
 		// NW
 		EncodeIntWithPrecision(lat+latDelta, lng-lngDelta, bits),
 	}
+}
+
+// Neighbor returns a geohash string that corresponds to the provided 
+// geohash's neighbor in the provided direction
+func Neighbor(hash string, direction Direction) string {
+	return Neighbors(hash)[direction]
+}
+
+// NeighborInt returns a uint64 that corresponds to the provided hash's
+// neighbor in the provided direction at 64-bit precision.
+func NeighborInt(hash uint64, direction Direction) uint64 {
+	return NeighborsIntWithPrecision(hash, 64)[direction]
+}
+
+// NeighborIntWithPrecision returns a uint64s that corresponds to the
+// provided hash's neighbor in the provided direction at the given precision.
+func NeighborIntWithPrecision(hash uint64, bits uint, direction Direction) uint64 {
+	return NeighborsIntWithPrecision(hash, bits)[direction]
 }
 
 // precalculated for performance

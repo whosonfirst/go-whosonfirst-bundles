@@ -11,6 +11,7 @@ self:   prep rmdeps
 	cp -r build src/github.com/whosonfirst/go-whosonfirst-meta/
 	cp -r meta src/github.com/whosonfirst/go-whosonfirst-meta/
 	cp -r options src/github.com/whosonfirst/go-whosonfirst-meta/
+	cp -r stats src/github.com/whosonfirst/go-whosonfirst-meta/
 	cp -r vendor/* src/
 
 rmdeps:
@@ -57,6 +58,7 @@ bin: 	self
 	@GOPATH=$(GOPATH) go build -o bin/wof-build-metafiles cmd/wof-build-metafiles.go
 	@GOPATH=$(GOPATH) go build -o bin/wof-update-metafile cmd/wof-update-metafile.go
 	@GOPATH=$(GOPATH) go build -o bin/wof-meta-prepare cmd/wof-meta-prepare.go
+	@GOPATH=$(GOPATH) go build -o bin/wof-meta-stats cmd/wof-meta-stats.go
 
 fmt:
 	go fmt *.go
@@ -64,3 +66,4 @@ fmt:
 	go fmt cmd/*.go
 	go fmt meta/*.go
 	go fmt options/*.go
+	go fmt stats/*.go
