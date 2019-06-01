@@ -154,7 +154,20 @@ func (b *Bundle) Bundle(to_index ...string) error {
 
 		id := whosonfirst.Id(f)
 
-		abs_path, err := uri.Id2AbsPath(root, id)
+		uri_args := uri.NewDefaultURIArgs()
+
+		is_alt := whosonfirst.IsAlt(f)
+
+		if is_alt {
+
+			source := "source"
+			function := "function"
+			extras := []string{}
+
+			uri_args = uri.NewAlternateURIArgs(source, function, extras...)
+		}
+
+		abs_path, err := uri.Id2AbsPath(root, id, uri_args)
 
 		if err != nil {
 			return nil
