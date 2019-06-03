@@ -55,15 +55,18 @@ vendor-deps: rmdeps deps
 	rm -rf src
 
 bin: 	self
-	@GOPATH=$(GOPATH) go build -o bin/wof-build-metafiles cmd/wof-build-metafiles.go
-	@GOPATH=$(GOPATH) go build -o bin/wof-update-metafile cmd/wof-update-metafile.go
-	@GOPATH=$(GOPATH) go build -o bin/wof-meta-prepare cmd/wof-meta-prepare.go
-	@GOPATH=$(GOPATH) go build -o bin/wof-meta-stats cmd/wof-meta-stats.go
+	@GOPATH=$(GOPATH) go build -o bin/wof-build-metafiles cmd/wof-build-metafiles/main.go
+	@GOPATH=$(GOPATH) go build -o bin/wof-update-metafile cmd/wof-update-metafile/main.go
+	@GOPATH=$(GOPATH) go build -o bin/wof-meta-prepare cmd/wof-meta-prepare/main.go
+	@GOPATH=$(GOPATH) go build -o bin/wof-meta-stats cmd/wof-meta-stats/main.go
 
 fmt:
 	go fmt *.go
 	go fmt build/*.go
-	go fmt cmd/*.go
+	go fmt cmd/wof-build-metafiles/*.go
+	go fmt cmd/wof-update-metafile/*.go
+	go fmt cmd/wof-meta-prepare/*.go
+	go fmt cmd/wof-meta-stats/*.go
 	go fmt meta/*.go
 	go fmt options/*.go
 	go fmt stats/*.go

@@ -1,8 +1,6 @@
 package geom
 
-import (
-	"math"
-)
+import "math"
 
 // A Bounds represents a multi-dimensional bounding box.
 type Bounds struct {
@@ -122,7 +120,8 @@ func (b *Bounds) SetCoords(min, max Coord) *Bounds {
 	return b
 }
 
-// OverlapsPoint determines if the bounding box overlaps the point (point is within or on the border of the bounds)
+// OverlapsPoint determines if the bounding box overlaps the point (point is
+// within or on the border of the bounds).
 func (b *Bounds) OverlapsPoint(layout Layout, point Coord) bool {
 	for i, stride := 0, layout.Stride(); i < stride; i++ {
 		if b.min[i] > point[i] || b.max[i] < point[i] {

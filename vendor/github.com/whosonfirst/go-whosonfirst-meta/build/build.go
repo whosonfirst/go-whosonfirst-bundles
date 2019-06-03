@@ -2,6 +2,7 @@ package build
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/facebookgo/atomicfile"
 	"github.com/whosonfirst/go-whosonfirst-csv"
@@ -19,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -79,6 +81,10 @@ func BuildFromIndex(opts *options.BuildOptions, mode string, indices []string) (
 			return err
 		}
 
+		// TBD
+		// PLEASE MAKE THIS SUPPORT ALT FILES, YEAH
+		// (20190601/thisisaaronland)
+
 		ok, err := utils.IsPrincipalWOFRecord(fh, ctx)
 
 		if err != nil {
@@ -122,9 +128,14 @@ func BuildFromIndex(opts *options.BuildOptions, mode string, indices []string) (
 			return err
 		}
 
-		f_repo := whosonfirst.Repo(f)
+		var r repo.Repo
 
-		r, err := repo.NewDataRepoFromString(f_repo)
+		if opts.Strict {
+			r, err = repo.NewDataRepoFromString(whosonfirst.Repo(f))
+		} else {
+
+			r, err = repo.NewCustomRepoFromString(whosonfirst.Repo(f))
+		}
 
 		if err != nil {
 			return err
@@ -145,10 +156,26 @@ func BuildFromIndex(opts *options.BuildOptions, mode string, indices []string) (
 
 			sort.Strings(fieldnames)
 
-			repo_opts := repo.DefaultFilenameOptions()
-			repo_opts.Placetype = placetype
+			var fname string
 
-			fname := r.MetaFilename(repo_opts)
+			if opts.Combined {
+
+				if opts.CombinedName == "" {
+					return errors.New("Missing opts.CombinedName")
+				}
+
+				if strings.HasSuffix(opts.CombinedName, ".csv") {
+					fname = opts.CombinedName
+				} else {
+					fname = fmt.Sprintf("%s.csv", opts.CombinedName)
+				}
+
+			} else {
+
+				repo_opts := repo.DefaultFilenameOptions()
+				repo_opts.Placetype = placetype
+				fname = r.MetaFilename(repo_opts)
+			}
 
 			root := opts.Workdir
 

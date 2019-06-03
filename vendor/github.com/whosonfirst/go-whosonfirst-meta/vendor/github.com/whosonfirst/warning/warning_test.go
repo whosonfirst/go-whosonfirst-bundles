@@ -37,6 +37,18 @@ func TestNil(t *testing.T) {
 	}
 }
 
+// TestWrapNil tests the case when we use multierror's ErrorOrNil() function
+// and it returns nil.
+func TestWrapNil(t *testing.T) {
+	err := warning.Wrap(nil)
+	if err != nil {
+		t.Errorf("wrapped nil should be a nil")
+	}
+	if warning.IsWarning(err) {
+		t.Errorf("wrapped nil should not be a warning")
+	}
+}
+
 // TestErrorIsNotWarning tests if common error is not a Warning.
 func TestErrorIsNotWarning(t *testing.T) {
 	err := fmt.Errorf("common error")
@@ -83,5 +95,18 @@ func TestMultierrNonWarning(t *testing.T) {
 
 	if warning.IsWarning(multierr.ErrorOrNil()) {
 		t.Errorf("this should not execute")
+	}
+}
+
+// TestUnderlyingCause tests if we can access the underlying cause and its type.
+func TestUnderlyingCause(t *testing.T) {
+	var multierr *multierror.Error
+
+	err := warning.Wrap(multierr)
+	warn := err.(warning.Warning)
+	cause := warn.Cause()
+	_, ok := cause.(*multierror.Error)
+	if !ok {
+		t.Errorf("Warning's cause is incorrect type.")
 	}
 }

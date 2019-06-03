@@ -114,6 +114,15 @@ func Concordances(f geojson.Feature) (WOFConcordances, error) {
 	return concordances, nil
 }
 
+func Source(f geojson.Feature) string {
+
+	possible := []string{
+		"properties.src:geom",
+	}
+
+	return utils.StringProperty(f.Bytes(), possible, "unknown")
+}
+
 func Country(f geojson.Feature) string {
 
 	possible := []string{
@@ -262,6 +271,15 @@ func LastModified(f geojson.Feature) int64 {
 	}
 
 	return utils.Int64Property(f.Bytes(), possible, -1)
+}
+
+func IsAlt(f geojson.Feature) bool {
+
+	if ParentId(f) == -1 {
+		return true
+	}
+
+	return false
 }
 
 func IsCurrent(f geojson.Feature) (flags.ExistentialFlag, error) {
@@ -487,6 +505,60 @@ func BelongsToOrdered(f geojson.Feature) ([]int64, error) {
 	}
 
 	return belongs_to, nil
+}
+
+func BelongsToWithCeiling(f geojson.Feature, str_pt string) ([]int64, error) {
+
+	pt, err := placetypes.GetPlacetypeByName(str_pt)
+
+	if err != nil {
+		return nil, err
+	}
+
+	valid := make(map[string]bool)
+	depicts := make(map[int64]bool)
+
+	roles := []string{
+		"common",
+		"common_optional",
+		"optional",
+	}
+
+	descendants := placetypes.DescendantsForRoles(pt, roles)
+
+	for _, p := range descendants {
+		valid[p.Name] = true
+	}
+
+	hierarchies := Hierarchies(f)
+
+	for _, h := range hierarchies {
+
+		for k, id := range h {
+
+			_, ok := depicts[id]
+
+			if ok {
+				continue
+			}
+
+			k = strings.Replace(k, "_id", "", 1)
+
+			_, ok = valid[k]
+
+			if ok {
+				depicts[id] = true
+			}
+		}
+	}
+
+	ids := make([]int64, 0)
+
+	for id, _ := range depicts {
+		ids = append(ids, id)
+	}
+
+	return ids, nil
 }
 
 func IsBelongsTo(f geojson.Feature, id int64) bool {
