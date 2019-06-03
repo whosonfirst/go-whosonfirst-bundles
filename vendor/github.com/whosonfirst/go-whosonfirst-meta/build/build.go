@@ -2,6 +2,7 @@ package build
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/facebookgo/atomicfile"
 	"github.com/whosonfirst/go-whosonfirst-csv"
@@ -12,19 +13,20 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-meta"
 	"github.com/whosonfirst/go-whosonfirst-meta/options"
 	"github.com/whosonfirst/go-whosonfirst-placetypes/filter"
- 	"github.com/whosonfirst/go-whosonfirst-repo"
- 	"github.com/whosonfirst/warning"
+	"github.com/whosonfirst/go-whosonfirst-repo"
+	"github.com/whosonfirst/warning"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 )
 
-func BuildFromIndex(opts *options.BuildOptions, mode string, paths []string) ([]string, error) {
+func BuildFromIndex(opts *options.BuildOptions, mode string, indices []string) ([]string, error) {
 
 	placetype_filter, err := filter.NewPlacetypesFilter(opts.Placetypes, opts.Roles, opts.Exclude)
 
@@ -52,6 +54,7 @@ func BuildFromIndex(opts *options.BuildOptions, mode string, paths []string) ([]
 
 	filehandles := make(map[string]*atomicfile.File)
 	writers := make(map[string]*csv.DictWriter)
+	paths := make(map[string]string)
 
 	wg := new(sync.WaitGroup)
 
@@ -78,6 +81,10 @@ func BuildFromIndex(opts *options.BuildOptions, mode string, paths []string) ([]
 			return err
 		}
 
+		// TBD
+		// PLEASE MAKE THIS SUPPORT ALT FILES, YEAH
+		// (20190601/thisisaaronland)
+
 		ok, err := utils.IsPrincipalWOFRecord(fh, ctx)
 
 		if err != nil {
@@ -90,13 +97,13 @@ func BuildFromIndex(opts *options.BuildOptions, mode string, paths []string) ([]
 
 		f, err := feature.LoadFeatureFromReader(fh)
 
-		if err != nil && !warning.IsWarning(err){
+		if err != nil && !warning.IsWarning(err) {
 			return err
 		}
 
 		atomic.AddInt32(&open, 1)
 		defer atomic.AddInt32(&open, -1)
-		
+
 		placetype := f.Placetype()
 
 		allow, err := placetype_filter.AllowFromString(placetype)
@@ -119,11 +126,16 @@ func BuildFromIndex(opts *options.BuildOptions, mode string, paths []string) ([]
 
 		if err != nil {
 			return err
-		}	
+		}
 
-		f_opts := repo.DefaultFilenameOptions()
+		var r repo.Repo
 
-		r, err := repo.NewDataRepoFromString(whosonfirst.Repo(f), f_opts)
+		if opts.Strict {
+			r, err = repo.NewDataRepoFromString(whosonfirst.Repo(f))
+		} else {
+
+			r, err = repo.NewCustomRepoFromString(whosonfirst.Repo(f))
+		}
 
 		if err != nil {
 			return err
@@ -144,13 +156,26 @@ func BuildFromIndex(opts *options.BuildOptions, mode string, paths []string) ([]
 
 			sort.Strings(fieldnames)
 
-			// HOW DOES THIS SQUARE WITH target ABOVE?
-			// (20180531/thisisaaronland)
+			var fname string
 
-			repo_opts := repo.DefaultFilenameOptions()
-			repo_opts.Placetype = placetype
+			if opts.Combined {
 
-			fname := r.MetaFilename(repo_opts)
+				if opts.CombinedName == "" {
+					return errors.New("Missing opts.CombinedName")
+				}
+
+				if strings.HasSuffix(opts.CombinedName, ".csv") {
+					fname = opts.CombinedName
+				} else {
+					fname = fmt.Sprintf("%s.csv", opts.CombinedName)
+				}
+
+			} else {
+
+				repo_opts := repo.DefaultFilenameOptions()
+				repo_opts.Placetype = placetype
+				fname = r.MetaFilename(repo_opts)
+			}
 
 			root := opts.Workdir
 
@@ -179,6 +204,7 @@ func BuildFromIndex(opts *options.BuildOptions, mode string, paths []string) ([]
 
 			filehandles[placetype] = fh
 			writers[placetype] = writer
+			paths[placetype] = outfile
 		}
 
 		writer.WriteRow(row)
@@ -197,7 +223,7 @@ func BuildFromIndex(opts *options.BuildOptions, mode string, paths []string) ([]
 
 	t1 := time.Now()
 
-	for _, to_index := range paths {
+	for _, to_index := range indices {
 
 		ta := time.Now()
 
@@ -224,14 +250,19 @@ func BuildFromIndex(opts *options.BuildOptions, mode string, paths []string) ([]
 
 	metafiles := make([]string, 0)
 
-	for path, fh := range filehandles {
-
-		metafiles = append(metafiles, path)
+	for placetype, fh := range filehandles {
 
 		if index_err != nil {
 			fh.Abort()
 		} else {
 			fh.Close()
+
+			path, ok := paths[placetype]
+
+			if ok {
+				metafiles = append(metafiles, path)
+			}
+
 		}
 	}
 

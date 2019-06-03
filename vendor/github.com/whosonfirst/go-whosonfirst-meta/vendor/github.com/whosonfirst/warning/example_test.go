@@ -53,3 +53,28 @@ func Example() {
 	// * Item 9 did not complete.
 	// * Item 10 did not complete.
 }
+
+func ExampleWarning_Cause() {
+	myfunc := func() error {
+		// Suppose more complicated function here.
+		var multierr *multierror.Error
+		for i := 0; i <= 10; i++ {
+			// Process data but do not stop on errors, create just warnings.
+			err := fmt.Errorf("Item %d did not complete.", i)
+			multierr = multierror.Append(multierr, err)
+		}
+
+		return warning.Wrap(multierr.ErrorOrNil())
+	}
+
+	// Access the underlying cause.
+	err := myfunc()
+	switch e := err.(type) {
+	case warning.Warning:
+		// Now you can access multierror's WrappedErrors()
+		fmt.Printf("%T", e.Cause())
+	}
+
+	// Output:
+	// *multierror.Error
+}
