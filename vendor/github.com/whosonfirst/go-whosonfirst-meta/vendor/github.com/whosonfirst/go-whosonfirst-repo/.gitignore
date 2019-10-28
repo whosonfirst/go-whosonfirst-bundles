@@ -1,7 +1,0 @@
-*~
-pkg
-*.csv
-src
-!vendor/src
-bin
-!bin/.gitignore

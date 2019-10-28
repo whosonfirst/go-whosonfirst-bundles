@@ -300,7 +300,7 @@ func (b *Bundle) Bundle(to_index ...string) error {
 	var meta_writer *csv.DictWriter
 	var meta_fh *atomicfile.File
 
-	f := func(fh io.Reader, ctx context.Context, args ...interface{}) error {
+	f := func(ctx context.Context, fh io.Reader, args ...interface{}) error {
 
 		path, err := index.PathForContext(ctx)
 
