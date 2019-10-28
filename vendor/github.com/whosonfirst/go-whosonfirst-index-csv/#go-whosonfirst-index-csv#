@@ -1,0 +1,6 @@
+g  /Users/asc/whosonfirst/go-whosonfirst-index-csv:
+  total used in directory 8 available 9223372036847172687
+  drwxr-xr-x    3 asc  staff    96 Oct  2 10:02 .
+  drwx------  127 asc  staff  4064 Oct  2 10:01 ..
+  drwxr-xr-x    2 asc  staff    64 Oct  2 10:02 .gitignore
+  -rw-r--r--    1 asc  staff  1628 Oct  2 10:02 csv.go.txt

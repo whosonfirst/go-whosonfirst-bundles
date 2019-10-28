@@ -5,15 +5,21 @@ import (
 	"flag"
 	"github.com/whosonfirst/go-whosonfirst-bundles"
 	"github.com/whosonfirst/go-whosonfirst-log"
+	"github.com/whosonfirst/go-whosonfirst-index"	
 	"io"
 	_ "log"
 	"os"
+	"fmt"
+	"strings"
 )
 
 func main() {
 
+	valid_modes := strings.Join(index.Modes(), ",")
+	desc_modes := fmt.Sprintf("The mode to use importing data. Valid modes are: %s.", valid_modes)
+	
 	var dest = flag.String("dest", "", "Where to write files")
-	var mode = flag.String("mode", "repo", "...")
+	var mode = flag.String("mode", "repo", desc_modes)
 
 	var sqlite = flag.Bool("sqlite", false, "...")
 	var dsn = flag.String("sqlite-dsn", "", "...")
